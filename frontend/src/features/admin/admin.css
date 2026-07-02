@@ -1,0 +1,767 @@
+.admin-card-stack {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.admin-card-stack > .ant-space-item {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.admin-heading {
+  border-bottom: 1px solid #dce3ea;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+}
+
+.admin-heading-copy {
+  min-width: 0;
+}
+
+.admin-heading-status {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.admin-workbench-grid,
+.admin-secondary-grid {
+  align-items: flex-start;
+}
+
+.admin-operations-col {
+  min-width: 0;
+}
+
+.admin-operations-stack {
+  gap: 16px;
+}
+
+.admin-operations-boundary-strip {
+  background: #f7fbfa;
+  border: 1px solid #d7eee9;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-operations-boundary-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-operations-boundary-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.admin-operations-boundary-item {
+  background: #fff;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  min-width: 0;
+  padding: 12px;
+}
+
+.admin-operations-boundary-icon {
+  color: #008b84;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.admin-operations-boundary-item .ant-typography {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-workbench-grid.is-authenticated {
+  align-items: flex-start;
+}
+
+.admin-operation-card .ant-card-body,
+.admin-access-card .ant-card-body {
+  padding: 18px;
+}
+
+.admin-report-workspace-card {
+  background: #fbfdfd;
+}
+
+.admin-audit-workspace-card {
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-login-card {
+  height: 100%;
+}
+
+.admin-access-card.is-authenticated {
+  height: auto;
+}
+
+.admin-access-summary {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(180px, 0.65fr) minmax(280px, 1fr) minmax(360px, 1.35fr);
+  min-width: 0;
+}
+
+.admin-access-copy {
+  min-width: 0;
+}
+
+.admin-access-error {
+  margin-top: 12px;
+}
+
+.admin-login-card h2,
+.admin-section-heading h2 {
+  font-size: 20px;
+  line-height: 1.3;
+  margin: 2px 0 4px;
+}
+
+.admin-session-panel {
+  align-items: center;
+  background: #f4fbfa;
+  border: 1px solid #ccebe6;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto 1fr auto;
+  padding: 14px;
+}
+
+.admin-session-icon {
+  color: #008b84;
+  font-size: 24px;
+}
+
+.admin-session-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.admin-security-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-security-item {
+  align-items: flex-start;
+  border: 1px solid #e5edf3;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.admin-security-item > .anticon {
+  color: #007f78;
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.admin-security-item .ant-typography {
+  display: block;
+}
+
+.admin-section-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+
+.admin-section-heading > div {
+  min-width: 0;
+}
+
+.admin-section-heading > .ant-space {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-metric-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-metric-tile {
+  border: 1px solid #e5edf3;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-metric-tile strong {
+  color: #142033;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.admin-metric-tile span {
+  color: #008b84;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-metric-tile .is-warning {
+  color: #fa541c;
+}
+
+.admin-refund-audit-panel {
+  border: 1px solid #e5edf3;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-refund-audit-panel h3 {
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.admin-refund-audit-table {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-refund-audit-table .ant-table-content {
+  max-width: 100%;
+  overflow-x: auto !important;
+}
+
+.admin-refund-action-panel {
+  border: 1px solid #fde3cf;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-refund-action-panel h3 {
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.admin-refund-reason-input {
+  max-width: 100%;
+}
+
+.admin-partial-refund-action-panel {
+  border: 1px solid #fde3cf;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-partial-refund-action-panel h3 {
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.admin-partial-refund-items {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-partial-refund-item {
+  border: 1px solid #e5edf3;
+  border-radius: 8px;
+  margin-inline-start: 0;
+  max-width: 100%;
+  padding: 8px 10px;
+}
+
+.admin-partial-refund-reason-input {
+  max-width: 100%;
+}
+
+.admin-refund-log-panel {
+  min-width: 0;
+}
+
+.admin-refund-log-heading {
+  margin-bottom: 0;
+}
+
+.admin-export-jobs-panel {
+  border-bottom: 1px solid #e5edf3;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding-bottom: 18px;
+}
+
+.admin-export-jobs-heading {
+  margin-bottom: 0;
+}
+
+.admin-export-job-create-toolbar,
+.admin-export-job-list-toolbar {
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-export-job-type-control,
+.admin-export-job-format-control,
+.admin-export-job-status-control,
+.admin-export-job-code-control {
+  flex: 1 1 150px;
+  max-width: 220px;
+  min-width: 130px;
+}
+
+.admin-export-job-date-control {
+  flex: 1 1 180px;
+  max-width: 230px;
+  min-width: 170px;
+}
+
+.admin-export-job-text-control {
+  flex: 1 1 160px;
+  max-width: 220px;
+  min-width: 140px;
+}
+
+.admin-export-job-filter-preview {
+  align-items: center;
+  background: #f7fbfa;
+  border: 1px solid #d7eee9;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.admin-check-in-failure-log-panel {
+  border-bottom: 1px solid #e5edf3;
+  min-width: 0;
+  padding-bottom: 18px;
+}
+
+.admin-check-in-failure-log-heading {
+  margin-bottom: 0;
+}
+
+.admin-check-in-failure-log-toolbar {
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-check-in-failure-log-control {
+  flex: 1 1 160px;
+  max-width: 220px;
+  min-width: 140px;
+}
+
+.admin-refund-log-toolbar {
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-refund-log-control {
+  flex: 1 1 160px;
+  max-width: 220px;
+  min-width: 140px;
+}
+
+.admin-check-in-log-export-panel {
+  border-bottom: 1px solid #e5edf3;
+  min-width: 0;
+  padding-bottom: 18px;
+}
+
+.admin-check-in-log-export-heading {
+  margin-bottom: 0;
+}
+
+.admin-check-in-log-export-toolbar {
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-check-in-log-export-control {
+  flex: 1 1 160px;
+  max-width: 220px;
+  min-width: 140px;
+}
+
+.admin-check-in-log-export-date {
+  flex: 1 1 180px;
+  max-width: 240px;
+  min-width: 170px;
+}
+
+.admin-export-job-table,
+.admin-check-in-failure-log-table,
+.admin-refund-log-table {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-export-job-table .ant-spin-nested-loading,
+.admin-export-job-table .ant-spin-container,
+.admin-export-job-table .ant-table,
+.admin-export-job-table .ant-table-container,
+.admin-check-in-failure-log-table .ant-spin-nested-loading,
+.admin-check-in-failure-log-table .ant-spin-container,
+.admin-check-in-failure-log-table .ant-table,
+.admin-check-in-failure-log-table .ant-table-container,
+.admin-refund-log-table .ant-spin-nested-loading,
+.admin-refund-log-table .ant-spin-container,
+.admin-refund-log-table .ant-table,
+.admin-refund-log-table .ant-table-container {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-export-job-table .ant-table-container,
+.admin-check-in-failure-log-table .ant-table-container,
+.admin-refund-log-table .ant-table-container {
+  overflow: hidden;
+}
+
+.admin-export-job-table .ant-table-content,
+.admin-check-in-failure-log-table .ant-table-content,
+.admin-refund-log-table .ant-table-content {
+  max-width: 100%;
+  overflow-x: auto !important;
+}
+
+.admin-audit-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-audit-item {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto 1fr auto;
+}
+
+.admin-audit-dot {
+  border-radius: 999px;
+  height: 8px;
+  width: 8px;
+}
+
+.admin-audit-dot.is-success {
+  background: #008b84;
+}
+
+.admin-audit-dot.is-warning {
+  background: #fa8c16;
+}
+
+.admin-orders-footnote {
+  display: block;
+  font-size: 12px;
+  text-align: right;
+}
+
+.admin-orders-toolbar {
+  align-items: center;
+  border-bottom: 1px solid #e5edf3;
+  min-width: 0;
+  padding-bottom: 12px;
+}
+
+.admin-batch-check-in-panel,
+.admin-batch-undo-check-in-panel {
+  border: 1px solid #e5edf3;
+  border-radius: 8px;
+  display: block;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-batch-check-in-panel h3,
+.admin-batch-undo-check-in-panel h3 {
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.admin-batch-check-in-form,
+.admin-batch-undo-check-in-form {
+  align-items: stretch;
+  min-width: 0;
+}
+
+.admin-batch-check-in-input,
+.admin-batch-undo-check-in-input {
+  flex: 1 1 360px;
+  min-width: 240px;
+}
+
+.admin-batch-undo-check-in-reason-input {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.admin-batch-check-in-action,
+.admin-batch-undo-check-in-action {
+  align-self: flex-start;
+  min-width: 116px;
+}
+
+.admin-batch-check-in-action .ant-wave,
+.admin-batch-undo-check-in-action .ant-wave {
+  inset: 0 !important;
+  width: auto !important;
+}
+
+.admin-batch-check-in-results,
+.admin-batch-check-in-table,
+.admin-batch-undo-check-in-results,
+.admin-batch-undo-check-in-table {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-batch-check-in-table .ant-table-content,
+.admin-batch-undo-check-in-table .ant-table-content {
+  max-width: 100%;
+  overflow-x: auto !important;
+}
+
+.admin-orders-search,
+.admin-orders-select {
+  flex: 1 1 180px;
+  max-width: 220px;
+  min-width: 160px;
+}
+
+.admin-order-detail-drawer .ant-drawer-body {
+  min-width: 0;
+}
+
+.admin-order-items-table,
+.admin-orders-table {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-order-items-table .ant-spin-nested-loading,
+.admin-order-items-table .ant-spin-container,
+.admin-order-items-table .ant-table,
+.admin-order-items-table .ant-table-container,
+.admin-orders-table .ant-spin-nested-loading,
+.admin-orders-table .ant-spin-container,
+.admin-orders-table .ant-table,
+.admin-orders-table .ant-table-container {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-order-items-table .ant-table-container,
+.admin-orders-table .ant-table-container {
+  overflow: hidden;
+}
+
+.admin-order-items-table .ant-table-content,
+.admin-orders-table .ant-table-content {
+  max-width: 100%;
+  overflow-x: auto !important;
+}
+
+.admin-orders-mobile-list {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-order-mobile-card {
+  background: #fbfdfd;
+  border: 1px solid #e5edf3;
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.admin-order-mobile-card .ant-space,
+.admin-order-mobile-card .ant-typography {
+  min-width: 0;
+}
+
+.admin-orders-mobile-empty {
+  border: 1px dashed #cfd9e3;
+  border-radius: 8px;
+  color: #6b7a90;
+  padding: 18px;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .admin-access-summary {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-workbench-grid,
+  .admin-secondary-grid {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100%;
+  }
+
+  .admin-workbench-grid > .ant-col,
+  .admin-secondary-grid > .ant-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .admin-operation-card .ant-card-body,
+  .admin-access-card .ant-card-body {
+    padding: 14px;
+  }
+
+  .admin-section-heading {
+    flex-direction: column;
+  }
+
+  .admin-metric-grid,
+  .admin-operations-boundary-grid,
+  .admin-security-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-export-job-create-toolbar,
+  .admin-export-job-list-toolbar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-export-job-table table {
+    min-width: 760px !important;
+  }
+
+  .admin-batch-check-in-table table,
+  .admin-batch-undo-check-in-table table {
+    min-width: 0 !important;
+    table-layout: fixed;
+    width: 100% !important;
+  }
+
+  .admin-batch-check-in-table .ant-table-cell,
+  .admin-batch-undo-check-in-table .ant-table-cell {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-batch-check-in-form,
+  .admin-batch-undo-check-in-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-orders-search,
+  .admin-batch-check-in-input,
+  .admin-batch-undo-check-in-input,
+  .admin-batch-undo-check-in-reason-input,
+  .admin-check-in-log-export-control,
+  .admin-check-in-log-export-date,
+  .admin-export-job-code-control,
+  .admin-export-job-date-control,
+  .admin-export-job-format-control,
+  .admin-export-job-status-control,
+  .admin-export-job-text-control,
+  .admin-export-job-type-control,
+  .admin-refund-log-control,
+  .admin-orders-select {
+    flex-basis: auto;
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-batch-check-in-action {
+    align-self: stretch;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-batch-undo-check-in-action {
+    align-self: stretch;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-export-job-create-action {
+    width: 100%;
+  }
+
+  .admin-check-in-failure-log-control {
+    max-width: none;
+    width: 100%;
+  }
+
+  .admin-orders-table {
+    display: none;
+  }
+
+  .admin-orders-mobile-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .admin-session-panel {
+    grid-template-columns: auto 1fr;
+  }
+
+  .admin-session-panel .ant-btn {
+    grid-column: 1 / -1;
+  }
+}

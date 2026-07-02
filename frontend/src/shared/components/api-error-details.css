@@ -1,0 +1,19 @@
+.api-error-details {
+  min-width: 0;
+}
+
+.api-error-details .ant-typography {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.api-error-details-meta {
+  border-top: 1px solid rgba(95, 111, 127, 0.18);
+  margin-top: 2px;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.api-error-details-meta .ant-typography {
+  white-space: normal;
+}
