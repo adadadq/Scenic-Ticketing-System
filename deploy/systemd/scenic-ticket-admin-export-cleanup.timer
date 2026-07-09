@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Scenic Ticket admin export cleanup daily
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=30m
+Persistent=true
+Unit=scenic-ticket-admin-export-cleanup.service
+
+[Install]
+WantedBy=timers.target

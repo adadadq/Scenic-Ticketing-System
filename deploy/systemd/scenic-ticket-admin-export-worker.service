@@ -1,0 +1,28 @@
+[Unit]
+Description=Scenic Ticket admin export worker
+After=network.target
+
+[Service]
+Type=simple
+User=scenic-ticket
+Group=scenic-ticket
+WorkingDirectory=/opt/scenic-ticket/current
+EnvironmentFile=/etc/scenic-ticket/backend.env
+Environment=ADMIN_EXPORT_STORAGE_DIR=/var/lib/scenic-ticket/admin-exports
+ExecStart=/opt/scenic-ticket/current/.venv/bin/python /opt/scenic-ticket/current/scripts/run-admin-export-worker.py --idle-sleep-seconds 5
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=scenic-ticket-admin-export-worker
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/scenic-ticket/admin-exports
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

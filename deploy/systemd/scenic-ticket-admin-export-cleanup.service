@@ -1,0 +1,21 @@
+[Unit]
+Description=Scenic Ticket admin export cleanup
+After=network.target
+
+[Service]
+Type=oneshot
+User=scenic-ticket
+Group=scenic-ticket
+WorkingDirectory=/opt/scenic-ticket/current
+EnvironmentFile=/etc/scenic-ticket/backend.env
+Environment=ADMIN_EXPORT_STORAGE_DIR=/var/lib/scenic-ticket/admin-exports
+ExecStart=/opt/scenic-ticket/current/.venv/bin/python /opt/scenic-ticket/current/scripts/cleanup-admin-export-files.py --older-than-days 7 --limit 100
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=scenic-ticket-admin-export-cleanup
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/scenic-ticket/admin-exports
+UMask=0077

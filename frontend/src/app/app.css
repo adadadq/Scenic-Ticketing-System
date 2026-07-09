@@ -1,0 +1,948 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.admin-shell {
+  background: #f5f9f9;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.app-sider {
+  color: #fff;
+  padding: 20px 14px;
+}
+
+.visitor-sider {
+  background:
+    linear-gradient(180deg, rgba(0, 139, 132, 0.96) 0%, rgba(0, 92, 89, 0.98) 56%, #05524f 100%) !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.app-sider.ant-layout-sider-zero-width {
+  padding: 0;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 26px;
+  position: relative;
+  z-index: 1;
+}
+
+.brand-mark {
+  align-items: center;
+  background: #fff;
+  border-radius: 14px;
+  color: #006c69;
+  display: grid;
+  flex: 0 0 auto;
+  font-size: 26px;
+  font-weight: 800;
+  height: 48px;
+  place-items: center;
+  width: 48px;
+}
+
+.brand-title,
+.brand-subtitle {
+  color: #fff !important;
+  display: block;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  opacity: 0.74;
+}
+
+.visitor-brand-mark {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(0, 43, 42, 0.18);
+}
+
+.admin-brand {
+  margin-bottom: 22px;
+}
+
+.admin-brand-mark {
+  color: #0f4f4c;
+}
+
+.side-menu {
+  background: transparent;
+  border-inline-end: 0 !important;
+  position: relative;
+  z-index: 1;
+}
+
+.side-menu .ant-menu-item {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.side-menu .ant-menu-item-selected,
+.side-menu .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+}
+
+.sider-note {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  line-height: 1.6;
+  margin-top: 28px;
+  padding: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.visitor-support-card {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  bottom: 92px;
+  color: rgba(255, 255, 255, 0.88);
+  display: flex;
+  gap: 10px;
+  left: 14px;
+  padding: 14px;
+  position: absolute;
+  right: 14px;
+  z-index: 1;
+}
+
+.visitor-support-card .anticon {
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.visitor-support-card .ant-typography {
+  color: inherit;
+  display: block;
+}
+
+.visitor-support-title {
+  font-size: 12px;
+  opacity: 0.82;
+}
+
+.visitor-support-line {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.visitor-support-time {
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.visitor-sider-river {
+  background:
+    radial-gradient(120px 42px at 18% 66%, rgba(255, 255, 255, 0.18), transparent 70%),
+    radial-gradient(150px 48px at 70% 76%, rgba(174, 231, 223, 0.2), transparent 72%),
+    linear-gradient(145deg, transparent 22%, rgba(174, 231, 223, 0.2) 23%, rgba(174, 231, 223, 0.04) 42%, transparent 43%);
+  bottom: -22px;
+  height: 150px;
+  left: -42px;
+  opacity: 0.75;
+  pointer-events: none;
+  position: absolute;
+  right: -42px;
+}
+
+.visitor-shell .visitor-sider {
+  background:
+    linear-gradient(180deg, #fff 0 54%, rgba(255, 255, 255, 0.84) 62%, rgba(255, 255, 255, 0.2) 78%, rgba(255, 255, 255, 0.06) 100%),
+    url('/admin-login-landscape.png') left bottom / 820px auto no-repeat !important;
+  border-right: 1px solid rgba(210, 226, 226, 0.9);
+  height: 100vh;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.visitor-shell .brand-title,
+.visitor-shell .brand-subtitle {
+  color: #0f4f4c !important;
+}
+
+.visitor-shell .visitor-brand-mark {
+  background: transparent;
+  box-shadow: none;
+  height: 44px;
+  width: 58px;
+}
+
+.scenic-logo-mark {
+  fill: none;
+  height: 34px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+  width: 50px;
+}
+
+.visitor-shell .side-menu .ant-menu-item {
+  color: #1f5f61;
+  font-size: 16px;
+  font-weight: 700;
+  height: 48px;
+  line-height: 48px;
+  margin: 18px 4px;
+}
+
+.visitor-shell .side-menu .ant-menu-item-selected,
+.visitor-shell .side-menu .ant-menu-item:hover {
+  background: linear-gradient(135deg, #008b84 0%, #006c69 100%) !important;
+  box-shadow: 0 12px 24px rgba(0, 108, 105, 0.24);
+  color: #fff !important;
+}
+
+.visitor-shell .visitor-support-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(196, 222, 219, 0.96);
+  bottom: 18px;
+  box-sizing: border-box;
+  box-shadow: 0 12px 28px rgba(18, 74, 74, 0.12);
+  color: #1f5f61;
+  height: 110px;
+  left: 18px;
+  min-height: 0;
+  padding: 18px 20px;
+  right: 18px;
+}
+
+.visitor-shell .visitor-support-line {
+  font-size: 13px;
+}
+
+.visitor-shell .visitor-sider-river {
+  display: none;
+}
+
+.visitor-shell-booking .app-main {
+  position: relative;
+}
+
+.visitor-shell-booking .visitor-header {
+  background: transparent;
+  border-bottom: 0;
+  height: 46px;
+  justify-content: flex-end;
+  padding: 0;
+  position: absolute;
+  right: 28px;
+  top: 28px;
+  z-index: 8;
+}
+
+.visitor-shell-booking .auth-status > .anticon-user,
+.visitor-shell-booking .auth-status > .ant-typography,
+.visitor-shell-booking .auth-status > .ant-tag {
+  display: none;
+}
+
+.visitor-shell-booking .auth-status > .ant-space-item:not(:has(.ant-btn)):not(:has(.auth-session-error-trigger)) {
+  display: none;
+}
+
+.visitor-shell-booking .auth-status .ant-btn {
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(20, 68, 72, 0.1);
+  font-weight: 800;
+  height: 46px;
+  min-width: 108px;
+}
+
+.visitor-shell-booking .auth-status .ant-btn-primary {
+  background: linear-gradient(135deg, #008b84 0%, #006c69 100%);
+  border: 0;
+  color: #fff;
+}
+
+.admin-sider {
+  background:
+    linear-gradient(180deg, #fff 0 42%, rgba(255, 255, 255, 0.9) 55%, rgba(255, 255, 255, 0.28) 78%, rgba(255, 255, 255, 0.02) 100%),
+    url('/admin-login-landscape.png') 24% bottom / 760px auto no-repeat !important;
+  border-right: 1px solid rgba(207, 225, 225, 0.9);
+  color: #14343d;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  position: sticky !important;
+  top: 0;
+}
+
+.admin-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.admin-sider-note {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-shell-admin .admin-app-header {
+  display: none;
+}
+
+.admin-shell-admin .admin-content {
+  padding: 0;
+}
+
+.admin-shell-admin .admin-main {
+  background: #f5f9f9;
+}
+
+.admin-shell .admin-brand {
+  gap: 14px;
+  margin: 12px 4px 34px;
+}
+
+.admin-shell .admin-brand-mark {
+  background: transparent;
+  border-radius: 0;
+  height: 58px;
+  width: 58px;
+}
+
+.admin-shell .admin-brand-mark svg {
+  fill: #0b6f69;
+  height: 100%;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  width: 100%;
+}
+
+.admin-shell .brand-title,
+.admin-shell .brand-subtitle {
+  color: #0c4f4d !important;
+}
+
+.admin-shell .brand-title {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.admin-shell .brand-subtitle {
+  color: #5e6d78 !important;
+  font-size: 15px;
+  opacity: 1;
+}
+
+.admin-shell .admin-side-menu .ant-menu-item {
+  border-radius: 8px;
+  color: #2f3c4b;
+  font-size: 16px;
+  font-weight: 800;
+  height: 48px;
+  line-height: 48px;
+  margin: 10px 4px;
+}
+
+.admin-shell .admin-side-menu .ant-menu-item .anticon {
+  font-size: 17px;
+}
+
+.admin-shell .admin-side-menu .ant-menu-item-selected,
+.admin-shell .admin-side-menu .ant-menu-item:hover {
+  background: linear-gradient(135deg, #00958e, #00756f) !important;
+  box-shadow: 0 13px 24px rgba(0, 117, 111, 0.22);
+  color: #fff !important;
+}
+
+.admin-sider-spacer {
+  flex: 1;
+  min-height: 18px;
+}
+
+.admin-sider-account {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(197, 222, 219, 0.96);
+  border-radius: 10px;
+  box-shadow: 0 18px 38px rgba(20, 74, 74, 0.13);
+  margin: 0 0 8px;
+  padding: 14px;
+}
+
+.admin-sider-account-main {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  margin-bottom: 12px;
+}
+
+.admin-sider-account-main .ant-typography {
+  color: #22313f;
+  display: inline-flex;
+  margin-right: 8px;
+}
+
+.admin-sider-account-main .ant-typography-secondary {
+  color: #798694 !important;
+  display: block;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.admin-role-pill {
+  background: #dff7ed;
+  border: 1px solid #abe7cc;
+  border-radius: 5px;
+  color: #009b78 !important;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 6px;
+}
+
+.admin-sider-avatar,
+.admin-profile-avatar {
+  background: linear-gradient(180deg, #e8f6ff 0 28%, #17475a 29% 54%, #15a486 55%);
+  border-radius: 999px;
+  display: inline-block;
+  height: 42px;
+  position: relative;
+  width: 42px;
+}
+
+.admin-sider-avatar::before,
+.admin-profile-avatar::before {
+  background: #ffd9bd;
+  border-radius: 999px;
+  content: "";
+  height: 14px;
+  left: 14px;
+  position: absolute;
+  top: 8px;
+  width: 14px;
+}
+
+.admin-sider-account .ant-btn {
+  border-top: 1px solid #e1eaef;
+  color: #425066;
+  font-size: 15px;
+  height: 42px;
+  justify-content: flex-start;
+  padding: 16px 0 0;
+}
+
+.app-header {
+  align-items: center;
+  border-bottom: 1px solid #e5edf3;
+  display: flex;
+  gap: 16px;
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.visitor-header {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+}
+
+.admin-app-header {
+  background: #fbfefe;
+}
+
+.admin-shell-actions {
+  justify-content: flex-end;
+}
+
+.admin-mobile-tabbar {
+  display: none;
+}
+
+.auth-status {
+  justify-content: flex-end;
+}
+
+.auth-session-error-trigger {
+  background: transparent;
+  border-radius: 4px;
+  border: 0;
+  cursor: help;
+  display: inline-flex;
+  font: inherit;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  padding: 0;
+}
+
+.auth-session-error-trigger:focus-visible {
+  outline-color: rgba(39, 94, 254, 0.48);
+}
+
+.status-strip {
+  min-width: 0;
+}
+
+.status-diagnostic-badge {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  display: inline-flex;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  padding: 6px 10px;
+}
+
+.status-badge-label {
+  color: #1f2a37;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-diagnostic-badge .ant-badge-status-text {
+  color: #334155;
+  font-size: 12px;
+  margin-inline-start: 5px;
+}
+
+.status-diagnostic-badge.is-error {
+  cursor: help;
+}
+
+.status-diagnostic-badge:focus-visible {
+  outline-color: rgba(39, 94, 254, 0.48);
+}
+
+.auth-modal-stack {
+  display: flex;
+  width: 100%;
+}
+
+.visitor-auth-modal .ant-modal-content {
+  border: 1px solid rgba(220, 227, 234, 0.88);
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(15, 79, 76, 0.18);
+  overflow: hidden;
+  padding: 24px;
+}
+
+.visitor-auth-modal .ant-modal-header {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.visitor-auth-modal .ant-modal-title {
+  color: #102033;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.visitor-auth-modal .ant-segmented {
+  background: #f5f8fa;
+  border: 1px solid #dce3ea;
+  padding: 4px;
+}
+
+.visitor-auth-modal .ant-segmented-item-selected {
+  box-shadow: inset 0 -2px 0 #008b84;
+  color: #006c69;
+  font-weight: 800;
+}
+
+.auth-modal-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+
+.auth-modal-primary-panel {
+  min-width: 0;
+}
+
+.auth-modal-guidance-panel {
+  border-left: 1px solid #dce3ea;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding-left: 20px;
+}
+
+.auth-panel-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.auth-panel-heading .ant-typography {
+  display: block;
+}
+
+.auth-panel-icon {
+  background: #eefaf7;
+  border-radius: 999px;
+  color: #008b84;
+  display: grid;
+  flex: 0 0 auto;
+  height: 34px;
+  place-items: center;
+  width: 34px;
+}
+
+.auth-workflow-strip {
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  display: grid;
+  overflow: hidden;
+}
+
+.auth-workflow-item {
+  align-items: flex-start;
+  background: #fff;
+  display: grid;
+  gap: 2px 10px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  padding: 10px 12px;
+}
+
+.auth-workflow-item + .auth-workflow-item {
+  border-top: 1px solid #edf2f6;
+}
+
+.auth-workflow-index {
+  align-items: center;
+  background: #008b84;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 900;
+  grid-row: span 2;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.auth-security-alert {
+  border-color: #bfe6df;
+}
+
+.auth-boundary-note {
+  align-items: flex-start;
+  background: #f7fbfa;
+  border: 1px solid #d7eee9;
+  border-radius: 8px;
+  color: #006c69;
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.auth-boundary-note .anticon {
+  margin-top: 3px;
+}
+
+.visitor-auth-modal .ant-form-item-label > label {
+  color: #334155;
+  font-weight: 700;
+}
+
+.visitor-auth-modal .ant-input,
+.visitor-auth-modal .ant-btn {
+  min-height: 40px;
+}
+
+.app-content {
+  padding: 24px;
+}
+
+.visitor-content {
+  background:
+    linear-gradient(180deg, rgba(236, 247, 246, 0.82) 0, rgba(245, 248, 250, 0) 260px),
+    #f5f8fa;
+  position: relative;
+}
+
+.visitor-content::before {
+  background:
+    linear-gradient(180deg, rgba(245, 248, 250, 0) 0%, #f5f8fa 88%),
+    radial-gradient(80px 36px at 72% 42%, rgba(0, 139, 132, 0.13), transparent 70%),
+    radial-gradient(190px 70px at 86% 38%, rgba(0, 108, 105, 0.12), transparent 72%),
+    linear-gradient(170deg, transparent 0 46%, rgba(0, 139, 132, 0.08) 47% 49%, transparent 50%);
+  content: '';
+  height: 164px;
+  pointer-events: none;
+  position: absolute;
+  right: 24px;
+  top: 0;
+  width: min(440px, 42vw);
+}
+
+.visitor-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.visitor-shell-booking .visitor-content {
+  background: #f4f8f8;
+  padding: 0 30px 22px 22px;
+}
+
+.visitor-shell-booking .visitor-content::before {
+  display: none;
+}
+
+.page-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.page-heading h1 {
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 4px 0 6px;
+}
+
+.eyebrow {
+  color: #008b84;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workspace-card,
+.summary-card,
+.step-card {
+  border-color: #dce3ea;
+  box-shadow: 0 8px 24px rgba(18, 38, 63, 0.05);
+  min-width: 0;
+}
+
+.summary-card {
+  position: sticky;
+  top: 88px;
+}
+
+.price {
+  color: #fa541c;
+  font-weight: 800;
+}
+
+.total-price {
+  color: #fa541c;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.breakable-text {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1199px) {
+  .summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    overflow-x: clip;
+  }
+
+  .app-sider {
+    bottom: 0;
+    left: 0;
+    position: fixed !important;
+    top: 0;
+    z-index: 20;
+  }
+
+  .visitor-support-card,
+  .visitor-sider-river {
+    display: none;
+  }
+
+  .app-main {
+    width: 100%;
+  }
+
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    height: auto;
+    padding: 14px 16px;
+  }
+
+  .visitor-shell-booking .visitor-header {
+    background: rgba(255, 255, 255, 0.94);
+    border-bottom: 1px solid #e5edf3;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+  }
+
+  .status-strip {
+    gap: 8px !important;
+  }
+
+  .status-diagnostic-badge {
+    padding: 5px 8px;
+  }
+
+  .auth-status {
+    justify-content: flex-start;
+  }
+
+  .visitor-auth-modal {
+    bottom: 0;
+    left: 0;
+    margin: 0;
+    max-width: 100vw;
+    padding-bottom: 0;
+    position: fixed;
+    right: 0;
+    top: auto !important;
+    width: 100vw !important;
+  }
+
+  .visitor-auth-modal .ant-modal-content {
+    border-radius: 18px 18px 0 0;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    padding: 22px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .visitor-auth-modal .ant-modal-header::before {
+    background: #cfd8e3;
+    border-radius: 999px;
+    content: '';
+    display: block;
+    height: 4px;
+    margin: 0 auto 14px;
+    width: 44px;
+  }
+
+  .auth-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-modal-guidance-panel {
+    border-left: 0;
+    border-top: 1px solid #dce3ea;
+    padding-left: 0;
+    padding-top: 14px;
+  }
+
+  .auth-workflow-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .auth-workflow-item {
+    border-top: 0 !important;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 10px 6px;
+    text-align: center;
+  }
+
+  .auth-workflow-index {
+    grid-row: auto;
+  }
+
+  .app-content {
+    padding: 16px;
+  }
+
+  .page-heading {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-content {
+    padding-bottom: 112px;
+  }
+
+  .admin-content {
+    padding-bottom: 104px;
+  }
+
+  .admin-mobile-tabbar {
+    align-items: stretch;
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid #dce3ea;
+    bottom: 0;
+    box-shadow: 0 -10px 28px rgba(15, 79, 76, 0.1);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    left: 0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    position: fixed;
+    right: 0;
+    z-index: 30;
+  }
+
+  .admin-mobile-tabbar button {
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: #53647a;
+    cursor: pointer;
+    display: grid;
+    font-size: 11px;
+    gap: 4px;
+    justify-items: center;
+    line-height: 1.2;
+    min-width: 0;
+    padding: 7px 2px;
+  }
+
+  .admin-mobile-tabbar button.is-active {
+    background: #e8f6f4;
+    color: #006c69;
+    font-weight: 800;
+  }
+
+  .admin-mobile-tabbar .anticon {
+    font-size: 18px;
+  }
+
+  .app-content > .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .app-content > .ant-row > .ant-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}

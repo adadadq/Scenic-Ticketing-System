@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>遇龙河景区票务与码头窗口运营系统</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body data-auth="signed-out">
+  <main class="login-screen" data-login-screen>
+    <section class="login-card-wrap" aria-label="系统登录">
+      <article class="panel login-panel" data-login-card>
+        <div class="login-brand">
+          <div class="brand-mark">遇</div>
+          <div>
+            <p class="eyebrow">遇龙河票务系统</p>
+            <h1>遇龙河景区票务与码头窗口运营系统</h1>
+          </div>
+        </div>
+
+        <div class="login-copy">
+          <h2 data-login-title>游客登录</h2>
+          <p data-login-copy>输入手机号即可进入游客端。未注册手机号会自动创建临时游客账号，实名注册后可下单和查看订单。</p>
+        </div>
+
+        <form class="form-grid" data-visitor-login-form data-login-form="visitor">
+          <label class="field">
+            <span>手机号</span>
+            <input name="phone" value="13911112222" required>
+          </label>
+          <button type="submit" class="action-button">进入游客端</button>
+          <button type="button" class="text-button" data-show-admin-login>管理员入口</button>
+        </form>
+
+        <form class="form-grid" data-admin-login-form data-login-form="admin" hidden>
+          <label class="field">
+            <span>账号</span>
+            <input name="username" placeholder="请输入管理员账号" required>
+          </label>
+          <label class="field">
+            <span>密码</span>
+            <input name="password" type="password" placeholder="请输入管理员密码" required>
+          </label>
+          <button type="submit" class="action-button action-button-secondary">进入后台</button>
+          <button type="button" class="text-button" data-show-visitor-login>返回游客登录</button>
+        </form>
+
+        <div class="login-foot">
+          <span data-login-hint>临时游客只能浏览线路、时段和窗口状态。</span>
+        </div>
+        <pre data-visitor-login-result hidden></pre>
+        <pre data-admin-login-result hidden></pre>
+      </article>
+
+      <aside class="login-side">
+        <div class="login-side-inner">
+          <p class="eyebrow">系统流程</p>
+          <h2>游客购票与码头窗口运营分权管理</h2>
+          <div class="login-side-list">
+            <span>游客登录</span>
+            <span>实名注册</span>
+            <span>在线下单</span>
+            <span>后台核销退款</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <template data-login-admin-copy>
+      <span>管理员登录</span>
+      <span>输入后台账号密码进入管理端，处理线路产品、窗口状态、销售日报、核销和退款。</span>
+      <span>管理员登录后才显示后台操作区。</span>
+    </template>
+    <template data-login-visitor-copy>
+      <span>游客登录</span>
+      <span>输入手机号即可进入游客端。未注册手机号会自动创建临时游客账号，实名注册后可下单和查看订单。</span>
+      <span>临时游客只能浏览线路、时段和窗口状态。</span>
+    </template>
+  </main>
+
+  <div class="page-shell" data-app-shell hidden>
+    <aside class="rail">
+      <div class="brand-block">
+        <div class="brand-mark">遇</div>
+        <div>
+          <p class="brand-kicker">遇龙河票务</p>
+          <h1>票务运营系统</h1>
+        </div>
+      </div>
+
+      <section class="account-card">
+        <span class="endpoint-label">当前账号</span>
+        <strong data-account-name>未登录</strong>
+        <p data-account-detail>--</p>
+        <button type="button" class="refresh-button secondary-button" data-logout>退出登录</button>
+      </section>
+
+      <nav class="rail-nav" aria-label="主导航">
+        <a href="#overview">运行总览</a>
+        <a href="#visitor-register" data-visitor-link>游客注册</a>
+        <a href="#visitor-order" data-visitor-link>游客下单</a>
+        <a href="#visitor-orders" data-visitor-link>我的订单</a>
+        <a href="#admin-route-products" data-admin-link>线路产品</a>
+        <a href="#admin-window-status" data-admin-link>窗口状态</a>
+        <a href="#admin-operations" data-admin-link>核销退款</a>
+      </nav>
+
+      <section class="rail-note">
+        <p>系统按登录角色控制功能。游客端负责注册、浏览线路、下单和查看自己的订单；管理员端负责码头窗口售票状态、核销、退款和销售报表。</p>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <header class="hero" id="overview">
+        <div class="hero-copy-block">
+          <p class="eyebrow">运行控制台</p>
+          <h2 data-dashboard-title>系统总览</h2>
+          <p class="hero-copy" data-dashboard-copy>登录后展示对应角色的业务流程。</p>
+          <div class="hero-meta">
+            <span data-api-base>--</span>
+            <span data-auth-scope>--</span>
+            <span data-current-business-date>--</span>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <div class="endpoint-card">
+            <span class="endpoint-label">服务状态</span>
+            <strong data-service-status data-state="idle">检查中</strong>
+          </div>
+          <div class="endpoint-card">
+            <span class="endpoint-label">数据库状态</span>
+            <strong data-db-status data-state="idle">检查中</strong>
+          </div>
+          <button type="button" class="refresh-button" data-refresh>刷新数据</button>
+        </div>
+      </header>
+
+      <section class="status-grid" aria-label="运行状态">
+        <article class="status-card">
+          <span class="status-label">当前身份</span>
+          <strong class="status-value" data-current-visitor-summary data-state="idle">未登录</strong>
+          <p>游客分为临时游客和实名游客，管理员拥有后台操作权限。</p>
+        </article>
+        <article class="status-card">
+          <span class="status-label">线路产品</span>
+          <strong class="status-value" data-product-summary>--</strong>
+          <p>展示当前可浏览的线路产品与票种。</p>
+        </article>
+        <article class="status-card">
+          <span class="status-label">可售时段</span>
+          <strong class="status-value" data-slot-summary>--</strong>
+          <p>按线路产品和游玩日期查询库存余量。</p>
+        </article>
+        <article class="status-card">
+          <span class="status-label">销售汇总</span>
+          <strong class="status-value" data-report-summary>--</strong>
+          <p>管理员查看指定区间的有效销量与销售额。</p>
+        </article>
+      </section>
+
+      <section class="content-grid content-grid-double" data-visitor-section>
+        <article class="panel" id="visitor-register">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">实名登记</p>
+              <h3>游客实名注册</h3>
+            </div>
+            <span class="panel-tag">注册后可下单</span>
+          </div>
+          <form data-visitor-form class="form-grid">
+            <label class="field">
+              <span>游客姓名</span>
+              <input name="visitorName" value="张三" required>
+            </label>
+            <label class="field">
+              <span>证件类型</span>
+              <select name="idType" required>
+                <option value="ID_CARD">身份证</option>
+                <option value="PASSPORT">护照</option>
+                <option value="HK_MO_PASS">港澳通行证</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>证件号码</span>
+              <input name="idNumber" value="450321200001011234" required>
+            </label>
+            <label class="field">
+              <span>手机号</span>
+              <input name="phone" value="13911112222" required>
+            </label>
+            <label class="field">
+              <span>性别</span>
+              <select name="gender">
+                <option value="">不填写</option>
+                <option value="MALE">男</option>
+                <option value="FEMALE">女</option>
+                <option value="UNKNOWN">未知</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>出生日期</span>
+              <input name="birthDate" type="date" value="2000-01-01">
+            </label>
+            <button type="submit" class="action-button">完成实名注册</button>
+          </form>
+          <pre data-visitor-result hidden></pre>
+        </article>
+
+        <article class="panel" id="visitor-order">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">游客购票</p>
+              <h3>线路浏览与下单</h3>
+            </div>
+            <span class="panel-tag" data-visitor-order-tag>游客购票</span>
+          </div>
+
+          <div class="control-strip">
+            <label class="field">
+              <span>线路产品</span>
+              <select data-ticket-type-select name="ticketTypeId"></select>
+            </label>
+            <label class="field">
+              <span>游玩日期</span>
+              <input type="date" data-visit-date>
+            </label>
+          </div>
+
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>线路产品</h4>
+              <span>展示路线名称、乘筏人数、窗口电话和售票状态</span>
+            </div>
+            <div class="stack-list" data-route-product-list></div>
+          </div>
+
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>可售时段</h4>
+              <span>展示当前线路产品在游玩日期下的库存余量</span>
+            </div>
+            <div class="stack-list" data-time-slot-list></div>
+          </div>
+
+          <div class="locked-message" data-temp-lock hidden>
+            <strong>临时游客只能浏览</strong>
+            <span>请先完成实名注册，再创建订单和查看我的订单。</span>
+          </div>
+
+          <form data-order-form class="form-grid">
+            <label class="field">
+              <span>购票人姓名</span>
+              <input name="buyerName" value="张三" required>
+            </label>
+            <label class="field">
+              <span>手机号</span>
+              <input name="buyerPhone" value="13911112222" required>
+            </label>
+            <label class="field">
+              <span>线路产品</span>
+              <select data-ticket-type-select name="ticketTypeId"></select>
+            </label>
+            <label class="field">
+              <span>游玩日期</span>
+              <input type="date" name="visitDate" data-visit-date required>
+            </label>
+            <label class="field">
+              <span>入园时段</span>
+              <select data-time-slot-select name="timeSlotId" required></select>
+            </label>
+            <button type="submit" class="action-button">创建订单</button>
+          </form>
+          <pre data-order-result hidden></pre>
+        </article>
+      </section>
+
+      <section class="content-grid" data-visitor-section>
+        <article class="panel" id="visitor-orders">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">订单记录</p>
+              <h3>我的订单</h3>
+            </div>
+            <button type="button" class="refresh-button secondary-button" data-reload-visitor-orders>刷新我的订单</button>
+          </div>
+          <div class="stack-list" data-visitor-orders></div>
+        </article>
+      </section>
+
+      <section class="content-grid content-grid-double" data-admin-section>
+        <article class="panel" id="admin-route-products">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">线路产品</p>
+              <h3>基础配置与线路产品</h3>
+            </div>
+            <span class="panel-tag">管理员维护</span>
+          </div>
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>新增线路产品</h4>
+              <span>同步创建基础票种，起终点码头从码头表读取</span>
+            </div>
+            <form data-route-product-form class="form-grid admin-form-grid">
+              <label class="field">
+                <span>线路名称</span>
+                <input name="productName" value="遇龙河演示新增线路" required>
+              </label>
+              <label class="field">
+                <span>票种名称</span>
+                <input name="ticketName" value="遇龙河演示成人票" required>
+              </label>
+              <label class="field">
+                <span>起点码头</span>
+                <select name="startPierId" data-start-pier-select required></select>
+              </label>
+              <label class="field">
+                <span>终点码头</span>
+                <select name="endPierId" data-end-pier-select required></select>
+              </label>
+              <label class="field">
+                <span>行程类型</span>
+                <select name="tripType" required>
+                  <option value="ONE_WAY">单程</option>
+                  <option value="ROUND_TRIP">往返</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>每筏人数</span>
+                <input name="raftCapacity" type="number" min="1" value="6" required>
+              </label>
+              <label class="field">
+                <span>原价</span>
+                <input name="originalPrice" type="number" min="0" step="0.01" value="168.00" required>
+              </label>
+              <label class="field">
+                <span>售价</span>
+                <input name="salePrice" type="number" min="0" step="0.01" value="128.00" required>
+              </label>
+              <label class="field">
+                <span>窗口电话</span>
+                <input name="windowPhone" value="400-800-8899">
+              </label>
+              <label class="field">
+                <span>票种类别</span>
+                <select name="ticketCategory">
+                  <option value="RAFT">竹筏票</option>
+                  <option value="ADULT">成人票</option>
+                  <option value="CHILD">儿童票</option>
+                  <option value="STUDENT">学生票</option>
+                  <option value="SENIOR">老人票</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>票种说明</span>
+                <input name="description" value="用于实验报告演示的新增线路产品">
+              </label>
+              <label class="field">
+                <span>退款规则</span>
+                <input name="refundRule" value="发船前可退，发船后不退">
+              </label>
+              <label class="field checkbox-field">
+                <span>实名购票</span>
+                <input name="isRealNameRequired" type="checkbox" checked>
+              </label>
+              <label class="field">
+                <span>初始状态</span>
+                <select name="routeStatus">
+                  <option value="ENABLED">启用</option>
+                  <option value="DISABLED">停用</option>
+                </select>
+              </label>
+              <button type="submit" class="action-button">新增线路产品</button>
+            </form>
+            <div class="inline-card admin-ticket-preview" data-admin-ticket-preview></div>
+            <pre data-route-product-result hidden></pre>
+          </div>
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>码头列表</h4>
+              <span>线路新增时使用 start_pier_id 和 end_pier_id 关联</span>
+            </div>
+            <div class="stack-list" data-pier-list></div>
+          </div>
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>线路产品管理</h4>
+              <span>删除采用停用方式，保留历史订单外键</span>
+            </div>
+            <div class="stack-list" data-admin-route-product-list></div>
+          </div>
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>可售时段设置</h4>
+              <span>按线路产品和游玩日期维护入园时段库存</span>
+            </div>
+            <form data-admin-time-slot-form class="form-grid admin-form-grid">
+              <label class="field">
+                <span>线路产品</span>
+                <select name="routeProductId" data-admin-time-slot-route-select required></select>
+              </label>
+              <label class="field">
+                <span>游玩日期</span>
+                <input type="date" name="visitDate" data-admin-time-slot-date required>
+              </label>
+              <label class="field">
+                <span>开始时间</span>
+                <input type="time" name="slotStartTime" value="09:00" required>
+              </label>
+              <label class="field">
+                <span>结束时间</span>
+                <input type="time" name="slotEndTime" value="10:00" required>
+              </label>
+              <label class="field">
+                <span>可售库存</span>
+                <input name="quotaTotal" type="number" min="0" step="1" value="100" required>
+              </label>
+              <label class="field">
+                <span>初始状态</span>
+                <select name="status">
+                  <option value="ENABLED">启用</option>
+                  <option value="DISABLED">停用</option>
+                </select>
+              </label>
+              <button type="submit" class="action-button">保存可售时段</button>
+            </form>
+            <pre data-admin-time-slot-result hidden></pre>
+            <div class="stack-list" data-admin-time-slot-list></div>
+          </div>
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>线路产品</h4>
+              <span>用于展示码头线路、筏位容量和窗口电话</span>
+            </div>
+            <div class="stack-list" data-route-product-list></div>
+          </div>
+          <div class="sub-panel">
+            <div class="sub-head">
+              <h4>基础票种</h4>
+              <span>与线路产品绑定，保持交易链路兼容</span>
+            </div>
+            <div class="stack-list" data-ticket-type-list></div>
+          </div>
+        </article>
+
+        <article class="panel" id="admin-window-status">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">窗口状态</p>
+              <h3>线下窗口售票状态</h3>
+            </div>
+            <label class="field field-inline">
+              <span>营业日</span>
+              <input type="date" data-notice-business-date>
+            </label>
+          </div>
+          <div class="notice-banner">
+            <strong>今日公告</strong>
+            <span>按营业日拉取窗口售票状态，并展示码头电话与备注。</span>
+          </div>
+          <div class="stack-list" data-offline-notice-list></div>
+        </article>
+      </section>
+
+      <section class="content-grid content-grid-triple" data-admin-section id="admin-operations">
+        <article class="panel operation-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">销售统计</p>
+              <h3>销售日报</h3>
+            </div>
+            <div class="date-range">
+              <label class="field">
+                <span>开始日期</span>
+                <input type="date" data-report-start>
+              </label>
+              <label class="field">
+                <span>结束日期</span>
+                <input type="date" data-report-end>
+              </label>
+            </div>
+          </div>
+          <div class="control-strip">
+            <label class="field">
+              <span>线路产品</span>
+              <select data-ticket-type-select name="ticketTypeId"></select>
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>有效销量</th>
+                  <th>销售额</th>
+                </tr>
+              </thead>
+              <tbody data-report-body>
+                <tr><td colspan="3">加载中</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel operation-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">门票核销</p>
+              <h3>门票核销</h3>
+            </div>
+            <span class="panel-tag">码头放行</span>
+          </div>
+          <form data-checkin-form class="form-grid">
+            <label class="field">
+              <span>票码</span>
+              <input name="ticketCode" placeholder="创建订单后自动填入" required>
+            </label>
+            <label class="field">
+              <span>操作员编号</span>
+              <input name="operatorId" type="number" min="1" value="1" required>
+            </label>
+            <label class="field">
+              <span>闸机编号</span>
+              <input name="checkinGate" value="码头闸机A" required>
+            </label>
+            <button type="submit" class="action-button">执行核销</button>
+          </form>
+          <pre data-checkin-result hidden></pre>
+        </article>
+
+        <article class="panel operation-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">退款处理</p>
+              <h3>门票退款</h3>
+            </div>
+            <span class="panel-tag">售后处理</span>
+          </div>
+          <form data-refund-form class="form-grid">
+            <label class="field">
+              <span>订单明细编号</span>
+              <input name="orderItemId" type="number" min="1" placeholder="创建订单后自动填入" required>
+            </label>
+            <label class="field">
+              <span>操作员编号</span>
+              <input name="operatorId" type="number" min="1" value="1" required>
+            </label>
+            <label class="field">
+              <span>退款原因</span>
+              <input name="reason" value="游客改签或天气调整" required>
+            </label>
+            <button type="submit" class="action-button action-button-secondary">发起退款</button>
+          </form>
+          <pre data-refund-result hidden></pre>
+        </article>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

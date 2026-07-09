@@ -1,0 +1,223 @@
+# 安全清单
+
+## 认证与会话
+
+- 使用 HTTP-only Cookie 保存会话标识。
+- Cookie 设置 SameSite、过期时间。
+- 登出后服务端会话失效，并清理会话 Cookie 与 CSRF Cookie。
+- 状态变更接口校验 CSRF。
+- 已登录后的状态变更接口校验 CSRF token 与当前 session 保存的哈希绑定关系。
+- 短信 provider 当前只能是 `disabled`；真实短信验证码、短信签名、发送频率、验证码过期和第三方回调尚未接入，未实现 provider 必须在配置校验阶段拒绝。
+- 游客登录接口按客户端地址和手机号限速；当前 MVP 使用进程内内存限速，生产多实例需要迁移到 Redis、网关或负载均衡层。
+- 管理员登录接口按客户端地址和用户名哈希限速；当前 MVP 使用进程内内存限速，生产多实例需要迁移到 Redis、网关或负载均衡层。
+- 登录限流 provider 当前只能是 `memory`；未实现的 `redis`、`memcached`、`gateway` 或其他全局限流 provider 必须在配置校验阶段拒绝，不能静默回退到进程内内存限流。
+- 本地开发 CORS 只允许 loopback 前端源携带 Cookie；部署时必须改成明确域名白名单。
+- 生产环境启动前拒绝不安全配置：Cookie 必须 Secure，CORS 必须是明确 HTTPS origin 白名单，不能使用通配符、本机开发源或本地开发正则。
+
+## 权限
+
+- 游客只能访问自己的订单。
+- 游客 session 不能访问管理员接口，管理员 session 不能被游客订单接口当成游客身份。
+- 已禁用管理员的既有 session 不能继续访问后台接口；后端应撤销当前服务端 session，并返回统一未登录错误，不能暴露账号禁用细节。
+- 后台订单接口只能由管理员 session 访问，且本切片只读，不改变订单状态。
+- 后台核销接口只能由管理员 session 访问，并且必须校验 session-bound CSRF。
+- 后台批量核销接口只能由管理员 session 访问，并且必须校验 session-bound CSRF。
+- 后台撤销核销接口只能由管理员 session 访问，并且必须校验 session-bound CSRF。
+- 后台批量撤销核销接口只能由管理员 session 访问，并且必须校验 session-bound CSRF。
+- 后台单张/批量撤销核销可接收可选原因；原因必须 trim 后 1-100 字，空白、超长和额外客户端控制字段必须被拒绝，且校验失败不能产生撤销或审计副作用。
+- 后台核销审计日志接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台核销审计日志检索接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台核销/撤销失败尝试审计检索接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台核销/撤销失败尝试审计 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台核销/撤销失败尝试审计 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台核销审计日志 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台核销审计日志 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台退款接口只能由 `SUPER_ADMIN` 管理员 session 访问，并且必须校验 session-bound CSRF；`OPERATOR` 被拒绝时不能产生订单、库存、支付或审计副作用。
+- 后台部分退款接口只能由 `SUPER_ADMIN` 管理员 session 访问，并且必须校验 session-bound CSRF；`OPERATOR` 被拒绝时不能产生订单、库存、支付或审计副作用。
+- 后台退款审计日志接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台退款审计日志检索接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台退款审计日志 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台退款审计日志 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台报表接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台支付对账汇总接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台支付对账汇总 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台支付对账汇总 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台产品维度报表接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台产品维度报表 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台产品维度报表 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台日报趋势报表接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台小时趋势报表接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台月度趋势报表接口只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台趋势报表 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台趋势报表 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台异步导出任务创建只能由管理员 session 访问，并且必须校验 session-bound CSRF；任务列表和详情只能由管理员 session 访问，GET 只读接口不要求 CSRF；任务列表的 `exportType/fileFormat/status` 筛选必须归一化并参数绑定。
+- 后台异步导出告警事件确认只能由管理员 session 访问，并且必须校验 session-bound CSRF；重复确认不能覆盖第一次确认记录。
+- 后台异步导出告警事件关闭和重开只能由管理员 session 访问，并且必须校验 session-bound CSRF；重复关闭不能覆盖第一次关闭记录。
+- 后台订单 CSV 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 后台订单 XLSX 导出只能由管理员 session 访问，GET 只读接口不要求 CSRF。
+- 支付、取消、查看订单都必须校验当前会话归属。
+- 不通过前端提交的 `visitor_id` 决定订单归属。
+
+## DTO 与字段
+
+- 公共接口不返回内部模型。
+- 不返回密码 hash、session、CSRF token、内部备注、审计字段。
+- 后台订单 DTO 不复用游客 DTO 或数据库行，列表和详情默认返回脱敏手机号。
+- 后台核销 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id 或审计字段。
+- 后台批量核销 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台撤销核销 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId`、SQL 或审计表内部字段。
+- 后台批量撤销核销 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台核销审计日志 DTO 可返回成功撤销原因，但不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台核销审计日志检索 DTO 可返回并按成功撤销原因筛选，但不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台核销/撤销失败尝试审计 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、订单内部 id、`adminUserId` 或 SQL。
+- 后台核销/撤销失败尝试审计 CSV 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、订单内部 id、`adminUserId` 或 SQL。
+- 后台核销/撤销失败尝试审计 CSV 导出必须对公式开头和前导空格后公式开头的单元格做注入防护。
+- 后台核销/撤销失败尝试审计 XLSX 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、订单内部 id、`adminUserId` 或 SQL。
+- 后台核销/撤销失败尝试审计 XLSX 导出必须把单元格写成字符串，不能生成公式节点，并继续防护公式开头和前导空格后公式开头的文本。
+- 后台核销/撤销失败尝试审计 XLSX 导出必须移除 XML 1.0 非法控制字符，避免脏数据损坏工作簿。
+- 后台核销审计日志 CSV 导出可返回成功撤销原因，但不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台核销审计日志 CSV 导出必须对原因等所有文本单元格的公式开头和前导空格后公式开头做注入防护。
+- 后台核销审计日志 XLSX 导出可返回成功撤销原因，但不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台核销审计日志 XLSX 导出必须把原因等所有文本单元格写成字符串，不能生成公式节点，并继续防护公式开头和前导空格后公式开头的文本。
+- 后台核销审计日志 XLSX 导出必须移除原因等文本中的 XML 1.0 非法控制字符，避免脏数据损坏工作簿。
+- 后台退款 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id 或审计字段。
+- 后台部分退款 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id 或审计字段。
+- 后台退款审计日志 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台退款审计日志检索 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台退款审计日志 CSV 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台退款审计日志 CSV 导出必须对公式开头和前导空格后公式开头的单元格做注入防护。
+- 后台退款审计日志 XLSX 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台退款审计日志 XLSX 导出必须把单元格写成字符串，不能生成公式节点，并继续防护公式开头和前导空格后公式开头的文本。
+- 后台退款审计日志 XLSX 导出必须移除 XML 1.0 非法控制字符，避免脏数据损坏工作簿。
+- 后台订单 XLSX 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL。
+- 后台订单 XLSX 导出必须把单元格写成字符串，不能生成公式节点，并继续防护公式开头和前导空格后公式开头的文本。
+- 后台订单 XLSX 导出必须移除 XML 1.0 非法控制字符，避免脏数据损坏工作簿。
+- 后台报表 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id 或审计字段。
+- 后台支付对账汇总 DTO 不返回完整手机号、证件号、支付流水号、渠道交易号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台支付对账汇总 CSV 导出不返回完整手机号、证件号、支付流水号、渠道交易号、session、CSRF token、密码 hash、内部 id、SQL 或审计明细，并必须防护 CSV 公式注入。
+- 后台支付对账汇总 XLSX 导出不返回完整手机号、证件号、支付流水号、渠道交易号、session、CSRF token、密码 hash、内部 id、SQL 或审计明细；单元格必须写成字符串，不能生成公式节点，并继续清理 XML 1.0 非法控制字符。
+- 后台产品维度报表 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台产品维度报表 CSV 导出不返回买家个人信息、支付流水号、渠道交易号、session、CSRF token、密码 hash、SQL 或审计明细，并必须防护 CSV 公式注入。
+- 后台产品维度报表 XLSX 导出不返回买家个人信息、支付流水号、渠道交易号、session、CSRF token、密码 hash、SQL 或审计明细，并必须防护表格公式注入、禁止公式节点、清理 XML 1.0 非法控制字符。
+- 后台日报趋势报表 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台小时趋势报表 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台月度趋势报表 DTO 不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台趋势报表 `includeEmpty=true` 补零只能生成聚合 DTO，不能新增个人信息、认证材料、内部 id 或 SQL 字段。
+- 后台趋势报表 CSV 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台趋势报表 CSV 导出必须对公式开头和前导空格后公式开头的单元格做注入防护。
+- 后台趋势报表 XLSX 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台趋势报表 XLSX 导出必须把单元格写成字符串，不能生成公式节点，并继续防护公式开头和前导空格后公式开头的文本。
+- 后台趋势报表 XLSX 导出必须移除 XML 1.0 非法控制字符，避免脏数据损坏工作簿。
+- 后台订单 CSV 导出不返回完整手机号、证件号、session、CSRF token、密码 hash、内部 id、SQL 或审计字段。
+- 后台订单 CSV 导出必须对公式开头和前导空格后公式开头的单元格做注入防护。
+- 后台异步导出任务 DTO 不返回存储路径、完整手机号、证件号、session、CSRF token、密码 hash、内部 id、`adminUserId` 或 SQL；只返回公开 `jobId`。
+- 后台异步导出任务请求体必须拒绝额外字段，`filters` 必须限制序列化大小，避免把大对象或客户端控制字段写入任务表。
+- 后台异步导出任务 `filters` 必须按 `exportType` 校验字段白名单，未知字段、非法类型、非法日期、非法枚举、过长文本或日期倒挂必须返回 `ADMIN_EXPORT_JOB_FILTERS_INVALID`。
+- 后台异步导出任务公开 DTO 必须脱敏 `ticketCode`、`orderNo`、`operatorUsername`、`reason` 这类敏感筛选值；worker 内部仍使用完整 `filters`，不能用公开 DTO 的脱敏值生成文件。
+- 后台异步导出 worker 脚本 stdout 中的公开任务 DTO 也必须脱敏敏感 `filters`；日志、CI 和 systemd journal 不能成为完整运营查询条件的二次传播路径。
+- 后台异步导出任务应保存创建请求的 `requestId`，但不能把 request id 当作权限、幂等或任务领取依据；它只用于排障关联，长度必须限制在数据库字段边界内。
+- 后台异步支付对账 CSV/XLSX worker 必须复用同步支付对账 CSV/XLSX 的单行汇总口径、公式注入防护、XLSX inline string、无公式节点、XML 1.0 非法控制字符清洗和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步产品维度报表 CSV worker 必须复用同步产品维度 CSV 导出的聚合字段边界、公式注入防护和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步产品维度报表 XLSX worker 必须复用同步产品维度 XLSX 导出的聚合字段边界、inline string、无公式节点、XML 1.0 非法控制字符清洗和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步日报趋势 CSV worker 必须复用同步日报趋势 CSV 的聚合字段边界、`includeEmpty` 补零范围校验、公式注入防护和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步日报趋势 XLSX worker 必须复用同步日报趋势 XLSX 的聚合字段边界、`includeEmpty` 补零范围校验、inline string、无公式节点、XML 1.0 非法控制字符清洗和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步小时趋势 CSV worker 必须复用同步小时趋势 CSV 的聚合字段边界、`includeEmpty` 31 天补零范围校验、公式注入防护和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步小时趋势 XLSX worker 必须复用同步小时趋势 XLSX 的聚合字段边界、`includeEmpty` 31 天补零范围校验、inline string、无公式节点、XML 1.0 非法控制字符清洗和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步月度趋势 CSV worker 必须复用同步月度趋势 CSV 的聚合字段边界、`includeEmpty` 60 个月补零范围校验、公式注入防护和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 后台异步月度趋势 XLSX worker 必须复用同步月度趋势 XLSX 的聚合字段边界、`includeEmpty` 60 个月补零范围校验、inline string、无公式节点、XML 1.0 非法控制字符清洗和日期校验；文件名与 `storage_key` 只能由后端派生。
+- 证件号和手机号按场景脱敏。
+
+## 支付与库存
+
+- 支付接口必须幂等。
+- 重复支付不能重复扣库存。
+- 支付 provider 当前只能是 `mock`；未实现的 `wechat`、`alipay`、`stripe`、`unionpay` 或其他真实支付 provider 必须在配置校验阶段拒绝，不能静默回退到模拟支付。
+- 模拟支付回调必须校验 HMAC 签名和时间戳，不能依赖游客 session 或 CSRF。
+- 模拟支付回调必须按 `eventId` 幂等，重复回调不能重复扣库存或出票。
+- 并发支付不能造成超卖。
+- 事务失败必须回滚。
+- 重复核销不能重复增加 `quota_checked_in`。
+- 批量核销中同一请求的重复票码必须被拒绝；逐票业务失败不能影响其他票码成功核销。
+- 只有已支付且未使用的票码可以核销；部分退款订单中剩余未退款票码仍可核销，已退款票码不可核销。
+- 只有已核销票码可以撤销核销；撤销成功必须把明细恢复为 `UNUSED`，把 `quota_checked_in` 减 1 且不能减成负数，`COMPLETED` 订单恢复为 `PAID`。
+- 核销和撤销核销成功时必须在同一事务写入核销审计日志；前端只能提交可选撤销原因，不能提交操作人、核销动作或审计时间。
+- 撤销核销原因只进入成功撤销核销审计日志，不进入核销/撤销失败尝试审计表；强制原因、按原因聚合和审批流需要单独设计。
+- 管理员 session 与 CSRF 校验通过后的核销业务失败必须写入失败尝试审计；匿名、游客、CSRF 失败和系统异常不写入业务失败审计。
+- 重复退款不能重复回补 `quota_sold`。
+- 只有已支付、存在成功支付记录且全部未使用的订单可以整单退款。
+- 部分退款只能退款订单内未使用票项，退款金额必须由后端按锁定明细计算，不能信任前端提交金额或状态。
+- 整单退款和部分退款成功时必须在同一事务写入退款审计日志；前端不能提交操作人、退款金额、退款状态或审计时间。
+- `OPERATOR` 不能执行整单退款或部分退款；权限拒绝必须发生在退款 repository 调用前。
+- 报表金额聚合不能因为订单明细 join 被重复放大。
+- 支付对账汇总必须用参数绑定筛选日期，并且只返回聚合金额、数量和差异结果，不返回支付流水号或渠道交易号。
+- 产品维度报表订单数必须去重，金额必须按明细口径聚合，不能把订单金额因 join 放大。
+- 日报趋势报表金额聚合和明细票数聚合必须分开，不能把订单金额因 join 放大。
+- 小时趋势报表金额聚合和明细票数聚合必须分开，不能把订单金额因 join 放大。
+- 月度趋势报表金额聚合和明细票数聚合必须分开，不能把订单金额因 join 放大。
+- 趋势报表补零必须要求明确 `dateFrom/dateTo`，并限制日报、小时、月度补零范围，避免无边界大响应。
+- 后台多行同步导出必须限制行数；订单明细、核销审计、核销失败审计、退款审计、产品维度和趋势 CSV/XLSX 导出超过 `SYNC_EXPORT_ROW_LIMIT` 时必须返回 `ADMIN_EXPORT_TOO_LARGE`，并使用参数化 `LIMIT` 探测上限。
+- 后台异步导出任务 worker 领取 `PENDING` 任务必须使用行锁，避免并发 worker 重复领取；成功/失败状态更新必须只作用于 `RUNNING` 任务；超过 30 分钟仍处于 `RUNNING` 的任务必须在下一轮 worker 领取前按自动重试额度回收，避免进程崩溃后永久挂起。
+- 后台异步导出任务 worker 写入的文件名、内部存储 key、错误码和错误信息必须限制长度并使用 SQL 参数绑定；错误码和错误信息的服务层限制必须与数据库列宽一致，避免校验通过后写库失败；`storage_key` 不能出现在管理员 DTO。
+- 后台异步导出 worker 写出本地文件后，如果成功落库失败，必须尽力删除刚生成的 `storage_key`，避免本地导出目录积累未被任务元数据引用的孤儿文件；删除失败不能掩盖原始落库失败。
+- 后台异步导出 worker 循环脚本必须只输出固定 JSON；参数错误、启动异常和中断不能向 stderr 泄露异常文本、本机路径、SQL 或配置细节。
+- 后台异步导出 worker 进程守护模板必须使用非 root 用户、受控环境文件、受控导出目录、自动重启、明确停止信号、journal 输出、`ProtectSystem=strict` 和只允许导出目录写入的 systemd 加固项。
+- 后台异步导出清理定时器模板必须使用 oneshot、非 root 用户、受控环境文件、受控导出目录、随机延迟、错过补跑、journal 输出、`ProtectSystem=strict` 和只允许导出目录写入的 systemd 加固项。
+- 后台异步导出存储 provider 当前只能是 `local`；未实现的 `s3`、`oss`、`cos` 或其他 provider 必须在配置校验阶段拒绝，不能静默回退到本地目录。
+- 后台异步导出队列 provider 当前只能是 `database`；未实现的 `redis`、`celery`、`rq` 或其他外部队列 provider 必须在配置校验阶段拒绝，不能静默回退到数据库队列。
+- 后台异步导出失败告警 provider 当前只能是 `disabled`；未实现的 `email`、`slack`、`webhook` 或其他告警 provider 必须在配置校验阶段拒绝，不能静默误认为失败告警已接入。
+- 后台异步导出最终失败告警事件只能记录 `job_id`、导出类型、文件格式、错误码、错误信息、来源、创建时间、重复出现次数和最后出现时间，不得写入 `filters`、`storage_key`、本机路径、SQL、堆栈或原始异常；RUNNING 超时耗尽重试额度落为最终 `FAILED` 时同样适用，可重试回 `PENDING` 不记录；同一个 `job_id/error_code/alert_source` 的未关闭事件重复出现时只能折叠计数，记录失败不能掩盖原始任务失败。
+- 后台异步导出告警事件只读查询 API 只能接受管理员 session，且只能返回 `eventId`、`jobId`、导出类型、文件格式、错误码、错误信息、来源、创建时间、重复出现次数、最后出现时间和确认/关闭展示字段；`jobId/exportType/fileFormat/errorCode/acknowledged/closed/dateFrom/dateTo` 查询筛选值必须归一化并参数绑定，不得返回 `filters`、`storage_key`、本机路径、SQL、堆栈或原始异常。
+- 后台异步导出告警事件汇总 API 只能接受管理员 session，且只能返回总数、确认数、未确认数、关闭数、未关闭数和按错误码聚合的 `byErrorCode`；`exportType/fileFormat/closed/dateFrom/dateTo` 必须归一化并参数绑定，不得返回 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出告警事件确认 API 只能写入确认时间、确认管理员展示名和可选备注；备注必须限制长度并参数绑定，不得返回或写入 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出告警事件批量确认 API 只能接受管理员 session，并且必须校验 session-bound CSRF；请求体只能包含 1-100 个不重复正整数 `eventIds` 和可选 200 字符备注；逐项复用确认边界，已确认事件不能覆盖第一次确认记录，不存在事件只能作为逐项失败返回；响应只返回计数和逐项 `eventId/acknowledged/code/message`，不得返回或写入 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出告警事件关闭和重开 API 只能接受管理员 session，并且必须校验 session-bound CSRF；关闭备注必须限制长度并参数绑定，重复关闭不能覆盖第一次关闭记录，重开只能清空关闭展示字段，不得返回或写入 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出告警事件批量关闭 API 只能接受管理员 session，并且必须校验 session-bound CSRF；请求体只能包含 1-100 个不重复正整数 `eventIds` 和可选 200 字符备注；逐项复用关闭边界，已关闭事件不能覆盖第一次关闭记录，不存在事件只能作为逐项失败返回；响应只返回计数和逐项 `eventId/closed/code/message`，不得返回或写入 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出告警事件删除 API 只能接受管理员 session，并且必须校验 session-bound CSRF；只能删除已关闭事件，不能删除未关闭活跃告警；删除 SQL 必须参数绑定并带 `closed_at IS NOT NULL` 条件，响应只返回 `eventId/deleted`，不得返回或写入 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出告警事件批量删除 API 只能接受管理员 session，并且必须校验 session-bound CSRF；请求体只能包含 1-100 个不重复正整数 `eventIds`；逐项复用已关闭删除边界，未关闭或不存在事件只能作为逐项失败返回，不影响同批其他事件；响应只返回计数和逐项 `eventId/deleted/code/message`，不得返回或写入 `filters`、`storage_key`、本机路径、SQL、堆栈、原始异常、session、CSRF token 或内部管理员 id。
+- 后台异步导出自动重试只能用于 worker 未预期异常，必须有 `retry_count/max_retries` 上限；可重试任务必须通过内部 `next_attempt_at` 延迟领取，避免循环 worker 立即 tight loop；业务/校验失败、unsupported 任务和手动中断不能自动重试。
+- 后台异步导出文件下载只能读取 `SUCCEEDED` 且已有文件元数据的任务；`storage_key` 必须限制在 `ADMIN_EXPORT_STORAGE_DIR` 内，不能允许路径穿越或在 DTO 中泄露。
+- 后台异步导出本地文件清理只能处理过期 `SUCCEEDED` 文件，删除文件和清空元数据都必须限制在内部 `storage_key` 与 `ADMIN_EXPORT_STORAGE_DIR` 内；异常路径只能跳过，不能越权删除。
+- 后台异步订单明细 CSV/XLSX worker 必须由后端派生 `storage_key`，复用同步订单 CSV/XLSX 的手机号脱敏、公式注入防护、XLSX inline string 和 XML 1.0 非法控制字符清洗；暂不支持的异步导出类型必须失败落库，不能无限停在 `RUNNING`。
+- 后台异步核销审计 CSV/XLSX worker 必须由后端派生 `storage_key`，复用同步核销审计 CSV/XLSX 的字段边界、筛选语义、公式注入防护、XLSX inline string 和 XML 1.0 非法控制字符清洗；暂不支持的异步导出类型必须失败落库，不能无限停在 `RUNNING`。
+- 后台异步核销失败审计 CSV/XLSX worker 必须由后端派生 `storage_key`，复用同步核销失败审计 CSV/XLSX 的字段边界、筛选语义、失败码枚举校验、公式注入防护、XLSX inline string 和 XML 1.0 非法控制字符清洗；暂不支持的异步导出类型必须失败落库，不能无限停在 `RUNNING`。
+- 后台异步退款审计 CSV/XLSX worker 必须由后端派生 `storage_key`，复用同步退款审计 CSV/XLSX 的字段边界、筛选语义、退款类型枚举校验、公式注入防护、XLSX inline string 和 XML 1.0 非法控制字符清洗；暂不支持的异步导出类型必须失败落库，不能无限停在 `RUNNING`。
+- 后台异步导出任务当前支持订单明细 CSV/XLSX、核销审计 CSV/XLSX、核销失败审计 CSV/XLSX、退款审计 CSV/XLSX、支付对账 CSV/XLSX、产品维度 CSV/XLSX、日报趋势 CSV/XLSX、小时趋势 CSV/XLSX 和月度趋势 CSV/XLSX 文件生成、worker 状态和受控下载端点；storage provider 当前只允许 `local`，queue provider 当前只允许 `database`，不接生产对象存储或外部队列。
+
+## 错误与日志
+
+- 错误响应不暴露 SQL、堆栈、表名。
+- 回调错误响应不暴露签名密钥、原始签名或完整请求体。
+- 登录失败使用统一错误信息。
+- 日志不记录完整证件号、Cookie、CSRF token。
+- 管理员登录失败不暴露账号是否存在、密码是否错误或账号是否禁用。
+
+## 当前验证证据
+
+- `docs/backend-security-audit.md` 逐项映射安全清单、代码边界和测试证据。
+- `backend/tests/test_security_basics.py` 覆盖 CSRF、Cookie、错误响应和 session 哈希基础。
+- `backend/tests/test_security_basics.py` 覆盖自定义 CSRF header 名会通过 `/api/auth/csrf` 暴露给前端，并出现在本地 CORS 预检允许头中。
+- `backend/tests/test_security_basics.py` 覆盖本地前端源 CORS 预检和外部来源拒绝。
+- `backend/tests/test_health.py` 覆盖 API 进程健康检查、数据库健康检查，以及数据库连接异常脱敏。
+- `backend/tests/test_success_contract.py` 覆盖前端 `ApiSuccess<T>` 依赖的成功响应格式和 request id 对齐。
+- `backend/tests/test_error_contract.py` 覆盖前端 `ApiError` 依赖的错误响应格式、request id 对齐和校验错误脱敏。
+- `backend/tests/test_openapi_contract.py` 覆盖 OpenAPI 中成功响应 `ApiSuccessDTO<T>` 和失败响应 `ApiFailureDTO`，避免暴露默认 `detail/loc` 错误结构。
+- `backend/tests/test_openapi_contract.py` 覆盖状态变更接口在 OpenAPI 中声明必需的 CSRF header，避免联调契约漏掉安全请求头。
+- `backend/tests/test_openapi_contract.py` 覆盖 OpenAPI 使用配置化 CSRF header 名，而不是硬编码默认值。
+- `backend/tests/test_openapi_contract.py` 覆盖 `docs/api-contract.md` 的 endpoint 清单与后端 OpenAPI 双向一致。
+- `backend/tests/test_frontend_endpoint_contract.py` 覆盖前端共享 API 的 method/path/query key、`apiRequest<T>()` 返回类型到 OpenAPI `data` schema 的映射、Cookie/CSRF、默认 CSRF Cookie 名和支付幂等键约定。
+- `backend/tests/test_config_db.py` 覆盖生产环境 Cookie、CORS 和数据库密码配置护栏。
+- `backend/tests/test_auth_api.py` 覆盖登录、游客登录限速、实名注册、退出、session 失效、Auth 请求拒绝额外客户端控制字段、退出时的 session 绑定 CSRF、退出清理 Cookie，以及重新获取 CSRF 后绑定到当前 session。
+- `backend/tests/test_admin_auth_api.py` 覆盖管理员登录、管理员登录限速、PBKDF2 口令哈希、管理员 session、禁用管理员既有 session 撤销、游客/管理员权限隔离、管理员退出、CSRF 和敏感字段防泄露。
+- `backend/tests/test_admin_export_jobs_api.py` 覆盖后台异步导出任务创建、列表、详情、管理员权限、创建任务 CSRF、DTO 防泄露、请求体额外字段拒绝、过滤条件大小限制、`filters` 白名单与归一化、非法 filters 错误码、worker 状态机、worker 输入长度限制、行锁领取、失败任务手动/自动重试、本地文件清理和 SQL 参数绑定；`backend/tests/test_openapi_export_script.py` 覆盖单次 worker、循环 worker、进程守护模板、storage factory 和清理脚本的 JSON 输出、错误脱敏与部署安全边界。
+- `backend/tests/test_admin_orders_api.py` 覆盖后台订单只读列表/详情、管理员权限边界、后台 DTO 脱敏、筛选错误码和参数绑定。
+- `backend/tests/test_admin_check_in_api.py` 覆盖后台单张票码核销、批量核销、撤销核销、批量撤销核销、撤销原因校验和成功审计、批量逐票业务失败、核销/撤销失败尝试审计、核销/撤销失败尝试审计 CSV/XLSX 导出、核销审计日志、核销审计日志检索、核销审计日志 CSV/XLSX 导出、同步导出行数上限、部分退款后剩余票码核销、管理员权限边界、session-bound CSRF、只读 GET 无 CSRF、重复核销、重复撤销防护、状态不可核销、状态不可撤销、核销 DTO 防泄露、批量核销 DTO 防泄露、撤销核销 DTO 防泄露、批量撤销核销 DTO 防泄露、核销/撤销失败审计 DTO 防泄露、失败审计导出敏感字段防泄露、核销审计 DTO 防泄露、核销审计检索 DTO 防泄露、核销审计导出敏感字段防泄露、CSV/XLSX 公式注入防护、XLSX 无公式节点、XML 1.0 非法控制字符清洗、库存核销计数、撤销时库存核销量回退、SQL 参数绑定和审计写入异常回滚路径。
+- `backend/tests/test_admin_refund_api.py` 覆盖后台全单模拟退款、后台部分模拟退款、退款审计日志、退款审计日志检索、退款审计日志 CSV/XLSX 导出、同步导出行数上限、管理员权限边界、session-bound CSRF、重复退款、状态不可退款、退款 DTO 防泄露、部分退款 DTO 防泄露、审计日志 DTO 防泄露、审计检索 DTO 防泄露、审计导出敏感字段防泄露、CSV/XLSX 公式注入防护、XLSX 无公式节点、XML 1.0 非法控制字符清洗、库存售出量回补和 SQL 参数绑定。
+- `backend/tests/test_schema_contract.py` 覆盖 `refund_audit_log` 表、退款类型约束、操作人外键、JSONB 票项号、订单时间索引和全局检索时间索引；同时覆盖 `check_in_audit_log` 表、撤销原因字段、核销动作约束、操作人外键、票项复合外键和查询索引，并覆盖 `admin_export_job` 表、状态/格式/类型约束、自动重试计数、`next_attempt_at` 延迟领取、迁移和任务查询索引。
+- `backend/tests/test_admin_reports_api.py` 覆盖后台运营汇总报表、后台支付对账汇总、后台产品维度报表、后台日报趋势报表、后台小时趋势报表、后台月度趋势报表、趋势补零、管理员权限边界、只读 GET 无 CSRF、日期范围错误、报表 DTO 防泄露和报表 SQL 参数绑定。
+- `backend/tests/test_admin_report_export_api.py` 覆盖后台订单 CSV/XLSX 导出、后台趋势报表 CSV/XLSX 导出、后台支付对账汇总 CSV/XLSX 导出、后台产品维度报表 CSV/XLSX 导出、同步导出行数上限、管理员权限边界、只读 GET 无 CSRF、日期范围错误、趋势补零错误码复用、敏感字段防泄露、CSV/XLSX 公式注入防护、XLSX 无公式节点、XML 1.0 非法控制字符清洗、前导空格公式防护和 SQL 参数绑定。
+- `backend/tests/test_order_create_api.py` 覆盖实名下单、拒绝前端指定 `visitorId`、订单归属过滤、下单时的 session 绑定 CSRF，以及重新获取 CSRF 后继续下单。
+- `backend/tests/test_payment_api.py` 覆盖支付幂等、库存条件更新、票码随机性和事务失败回滚。
+- `backend/tests/test_mock_payment_callback_api.py` 覆盖模拟支付回调 HMAC 验签、时间戳防重放、事件幂等、金额校验、状态机、库存条件更新、DTO 防泄露和 SQL 参数绑定。
+- `backend/tests/test_my_orders_api.py` 覆盖取消订单、状态筛选、CSRF、订单归属过滤和手机号脱敏。
+- `backend/tests/test_visitor_flow_api.py` 覆盖游客从登录到支付、订单中心、已支付取消失败和闭环响应敏感字段抽样的接口验收。
+- `backend/tests/test_security_basics.py::test_request_logging_omits_query_body_cookie_and_csrf` 覆盖最小请求日志只记录 method/path/status/安全化 request id/耗时，不记录 query、请求体、Cookie 或 CSRF；同文件也覆盖未处理 500 会产生日志，以及纯数字等不安全 request id 不会原样进入日志。
