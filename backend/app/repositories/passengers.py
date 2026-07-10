@@ -102,6 +102,15 @@ class PostgresPassengerTemplateRepository:
 
     def delete(self, template_id: int, owner_visitor_id: int) -> bool:
         with connect_db() as connection:
+            connection.execute(
+                """
+                UPDATE ticket_order_item
+                SET passenger_template_id = NULL
+                WHERE passenger_template_id = %s
+                  AND visitor_id = %s
+                """,
+                (template_id, owner_visitor_id),
+            )
             cursor = connection.execute(
                 """
                 DELETE FROM visitor_passenger_template
