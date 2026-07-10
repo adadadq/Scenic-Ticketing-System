@@ -619,7 +619,7 @@ def test_postgres_create_pending_order_does_not_update_inventory(monkeypatch):
         "passenger_id_number": "11010519491231002X",
         "passenger_phone": "13911112222",
     }
-    connection = ScriptedConnection(results=[order_row, {"id": 99}, item_row])
+    connection = ScriptedConnection(results=[order_row, None, {"id": 99}, item_row])
     monkeypatch.setattr(order_repository_module, "connect_db", lambda: connection)
 
     order = PostgresOrderRepository().create_pending_order(
@@ -654,11 +654,13 @@ def test_postgres_create_pending_order_does_not_update_inventory(monkeypatch):
     assert order.payment_status == "UNPAID"
     assert order.items[0].item_status == "PENDING_PAYMENT"
     assert "INSERT INTO ticket_order" in queries
+    assert "UPDATE visitor_passenger_template" in queries
     assert "INSERT INTO visitor_passenger_template" in queries
+    assert "ON CONFLICT" not in queries
     assert "INSERT INTO ticket_order_item" in queries
-    assert "ticket_type_id,\n                            product_id,\n                            visitor_id" in connection.queries[2][0]
+    assert "ticket_type_id,\n                            product_id,\n                            visitor_id" in connection.queries[3][0]
     assert "UPDATE time_slot_quota" not in queries
-    item_insert_params = connection.queries[2][1]
+    item_insert_params = connection.queries[3][1]
     assert item_insert_params[2] == 1
     assert item_insert_params[5] == 99
     assert item_insert_params[6] == "张三"

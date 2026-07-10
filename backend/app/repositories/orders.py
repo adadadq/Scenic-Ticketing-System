@@ -822,29 +822,44 @@ class PostgresOrderRepository:
                     if passenger_template_id is None:
                         template_row = connection.execute(
                             """
-                            INSERT INTO visitor_passenger_template (
-                                owner_visitor_id,
-                                passenger_name,
-                                id_type,
-                                id_number,
-                                phone
-                            )
-                            VALUES (%s, %s, %s, %s, %s)
-                            ON CONFLICT (owner_visitor_id, id_type, id_number)
-                            DO UPDATE SET
-                                passenger_name = EXCLUDED.passenger_name,
-                                phone = EXCLUDED.phone,
+                            UPDATE visitor_passenger_template
+                            SET passenger_name = %s,
+                                phone = %s,
                                 updated_at = CURRENT_TIMESTAMP
+                            WHERE owner_visitor_id = %s
+                              AND id_type = %s
+                              AND id_number = %s
                             RETURNING id
                             """,
                             (
-                                visitor_id,
                                 item.passenger_name,
+                                item.passenger_phone,
+                                visitor_id,
                                 item.passenger_id_type,
                                 item.passenger_id_number,
-                                item.passenger_phone,
                             ),
                         ).fetchone()
+                        if not template_row:
+                            template_row = connection.execute(
+                                """
+                                INSERT INTO visitor_passenger_template (
+                                    owner_visitor_id,
+                                    passenger_name,
+                                    id_type,
+                                    id_number,
+                                    phone
+                                )
+                                VALUES (%s, %s, %s, %s, %s)
+                                RETURNING id
+                                """,
+                                (
+                                    visitor_id,
+                                    item.passenger_name,
+                                    item.passenger_id_type,
+                                    item.passenger_id_number,
+                                    item.passenger_phone,
+                                ),
+                            ).fetchone()
                         passenger_template_id = template_row["id"]
                     else:
                         template_row = connection.execute(
