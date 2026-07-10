@@ -11,152 +11,37 @@ import {
   SafetyCertificateOutlined,
   SunOutlined,
 } from '@ant-design/icons'
-import { Button, Input, Select, Typography } from 'antd'
-import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Alert, Button, Input, Select, Typography } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { adminAuditLogsApi } from '../../shared/api/endpoints'
+import { formatApiError } from '../../shared/api/errors'
+import type { AdminAuditLog, AdminAuditLogType } from '../../shared/api/types'
 import { AdminNoticeButton } from './components/AdminNoticeButton'
 import './adminAudit.css'
 
 const { Text, Title } = Typography
 
-type AuditLog = {
+type AuditTone = 'teal' | 'orange' | 'green' | 'blue'
+type AuditViewLog = AdminAuditLog & {
   actor: string
   actorAccount: string
-  browser: string
   changeSummary: string
-  id: string
   ip: string
-  object: string
-  requestId: string
-  result: '成功' | '警告'
   source: string
   steps: string[]
   time: string
   title: string
-  type: '登录后台' | '修改票价' | '核验入园' | '发起退款' | '导出报表' | '修改管理员账号'
-  tone: 'teal' | 'orange' | 'green' | 'blue'
+  tone: AuditTone
 }
 
-const auditLogs: AuditLog[] = [
-  {
-    actor: '演示管理员',
-    actorAccount: '@admin',
-    browser: 'Chrome / Windows',
-    changeSummary: '本次操作无数据变更',
-    id: 'LOG20260628160215A1B2C',
-    ip: '192.168.1.10',
-    object: '运营后台',
-    requestId: 'req-81d6b6d3775440fd9719f7c736340fb7',
-    result: '成功',
-    source: 'Chrome / Windows 11',
-    steps: ['提交登录请求', '验证账号密码', '校验权限通过', '登录成功'],
-    time: '2026-06-28 16:02:15',
-    title: '登录后台',
-    type: '登录后台',
-    tone: 'teal',
-  },
-  {
-    actor: '演示管理员',
-    actorAccount: '@admin',
-    browser: 'Chrome / Windows',
-    changeSummary: '遇龙河成人票价格由 118 调整为 128',
-    id: 'LOG20260628154532B2C3D',
-    ip: '192.168.1.10',
-    object: '遇龙河成人票',
-    requestId: 'req-price-260628-154532',
-    result: '成功',
-    source: 'Chrome / Windows',
-    steps: ['打开票种管理', '提交价格调整', '写入审计记录', '保存成功'],
-    time: '2026-06-28 15:45:32',
-    title: '修改票价',
-    type: '修改票价',
-    tone: 'orange',
-  },
-  {
-    actor: '李四',
-    actorAccount: '@lisi',
-    browser: 'Android / Mobile',
-    changeSummary: '票码核验成功，订单状态同步更新',
-    id: 'LOG20260628152008C3D4E',
-    ip: '192.168.1.25',
-    object: '遇龙河成人票',
-    requestId: 'req-checkin-260628-152008',
-    result: '成功',
-    source: 'Android / Mobile',
-    steps: ['扫描票码', '校验订单状态', '写入核验记录', '允许入园'],
-    time: '2026-06-28 15:20:08',
-    title: '核验入园',
-    type: '核验入园',
-    tone: 'green',
-  },
-  {
-    actor: '王五',
-    actorAccount: '@wangwu',
-    browser: 'iOS / Mobile',
-    changeSummary: '儿童票退款进入处理队列',
-    id: 'LOG20260628145047D4E5F',
-    ip: '192.168.1.30',
-    object: '遇龙河儿童票',
-    requestId: 'req-refund-260628-145047',
-    result: '成功',
-    source: 'iOS / Mobile',
-    steps: ['读取订单', '校验退款条件', '提交退款申请', '等待处理'],
-    time: '2026-06-28 14:50:47',
-    title: '发起退款',
-    type: '发起退款',
-    tone: 'orange',
-  },
-  {
-    actor: '张三',
-    actorAccount: '@zhangsan',
-    browser: 'Chrome / Windows',
-    changeSummary: '销售报表导出任务已创建',
-    id: 'LOG20260628141022E5F6G',
-    ip: '192.168.1.10',
-    object: '销售报表',
-    requestId: 'req-export-260628-141022',
-    result: '成功',
-    source: 'Chrome / Windows',
-    steps: ['选择日期范围', '创建导出任务', '生成下载文件', '任务完成'],
-    time: '2026-06-28 14:10:22',
-    title: '导出报表',
-    type: '导出报表',
-    tone: 'blue',
-  },
-  {
-    actor: '演示管理员',
-    actorAccount: '@admin',
-    browser: 'Chrome / Windows',
-    changeSummary: '管理员账号资料发生变更，请复核',
-    id: 'LOG20260628133056F6G7H',
-    ip: '192.168.1.10',
-    object: '演示管理员',
-    requestId: 'req-profile-260628-133056',
-    result: '警告',
-    source: 'Chrome / Windows',
-    steps: ['打开账号设置', '提交资料修改', '触发风险提示', '记录审计日志'],
-    time: '2026-06-28 13:30:56',
-    title: '修改管理员账号',
-    type: '修改管理员账号',
-    tone: 'orange',
-  },
-]
-
-const typeOptions = [
-  { label: '操作类型', value: 'ALL' },
-  ...Array.from(new Set(auditLogs.map((item) => item.type))).map((value) => ({ label: value, value })),
-]
-
-const actorOptions = [
-  { label: '操作人', value: 'ALL' },
-  ...Array.from(new Set(auditLogs.map((item) => item.actor))).map((value) => ({ label: value, value })),
-]
-
-const metrics = [
-  { icon: <SafetyCertificateOutlined />, label: '今日操作', tone: 'teal', trend: '+18.75% ↑', value: '128' },
-  { icon: <ExclamationCircleOutlined />, label: '高风险操作', tone: 'orange', trend: '-25.00% ↓', value: '3' },
-  { icon: <CheckCircleOutlined />, label: '核验记录', tone: 'green', trend: '+12.50% ↗', value: '86' },
-  { icon: <DownloadOutlined />, label: '导出任务', tone: 'blue', trend: '+9.09% ↗', value: '12' },
-]
+const typeTone: Record<AdminAuditLogType, AuditTone> = {
+  发起退款: 'orange',
+  核验入园: 'green',
+  核验失败: 'orange',
+  系统设置: 'blue',
+  票种管理: 'teal',
+}
 
 type AdminAuditPanelProps = {
   onOpenProfile?: () => void
@@ -164,18 +49,33 @@ type AdminAuditPanelProps = {
 
 export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
   const [keyword, setKeyword] = useState('')
-  const [type, setType] = useState('ALL')
+  const [type, setType] = useState<AdminAuditLogType | 'ALL'>('ALL')
   const [actor, setActor] = useState('ALL')
-  const [selectedId, setSelectedId] = useState(auditLogs[0]?.id)
-  const logs = useMemo(() => auditLogs.filter((log) => {
+  const [selectedId, setSelectedId] = useState<string>()
+  const auditLogsQuery = useQuery({ queryKey: ['admin-audit-logs'], queryFn: () => adminAuditLogsApi.list() })
+  const allLogs = useMemo(() => (auditLogsQuery.data?.items ?? []).map(toViewLog), [auditLogsQuery.data])
+  const typeOptions = useMemo(() => [
+    { label: '操作类型', value: 'ALL' },
+    ...Array.from(new Set(allLogs.map((item) => item.type))).map((value) => ({ label: value, value })),
+  ], [allLogs])
+  const actorOptions = useMemo(() => [
+    { label: '操作人', value: 'ALL' },
+    ...Array.from(new Set(allLogs.map((item) => item.actor))).map((value) => ({ label: value, value })),
+  ], [allLogs])
+  const logs = useMemo(() => allLogs.filter((log) => {
     const matchesType = type === 'ALL' || log.type === type
     const matchesActor = actor === 'ALL' || log.actor === actor
     const q = keyword.trim().toLowerCase()
-    const matchesKeyword = !q || [log.id, log.actor, log.object, log.type, log.ip].some((value) => value.toLowerCase().includes(q))
+    const matchesKeyword = !q || [log.id, log.actor, log.object, log.type, log.ip, log.deviceId ?? ''].some((value) => value.toLowerCase().includes(q))
 
     return matchesType && matchesActor && matchesKeyword
-  }), [actor, keyword, type])
+  }), [actor, allLogs, keyword, type])
   const selectedLog = logs.find((log) => log.id === selectedId) ?? logs[0]
+  const metrics = useMemo(() => buildMetrics(allLogs), [allLogs])
+
+  useEffect(() => {
+    if (!selectedLog && logs[0]) setSelectedId(logs[0].id)
+  }, [logs, selectedLog])
 
   function exportVisibleLogs() {
     const header = ['时间', '操作人', '操作类型', '对象', '结果', '请求来源']
@@ -215,10 +115,13 @@ export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
       </header>
 
       <div className="admin-audit-body">
+        {auditLogsQuery.isError ? (
+          <Alert showIcon type="error" message={formatApiError(auditLogsQuery.error, '审计日志加载失败，请稍后重试。')} />
+        ) : null}
         <div className="admin-audit-toolbar">
           <div className="admin-audit-date" aria-label="统计周期">
             <CalendarOutlined />
-            <span>2026/06/26&nbsp;&nbsp;~&nbsp;&nbsp;2026/06/28</span>
+            <span>最近 {auditLogsQuery.data?.total ?? 0} 条真实记录</span>
           </div>
           <Select className="admin-audit-select" options={typeOptions} value={type} onChange={setType} />
           <Select className="admin-audit-select" options={actorOptions} value={actor} onChange={setActor} />
@@ -231,10 +134,11 @@ export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
             value={keyword}
           />
           <div className="admin-audit-toolbar-spacer" />
-          <Button icon={<ReloadOutlined />} onClick={() => {
+          <Button icon={<ReloadOutlined />} loading={auditLogsQuery.isFetching} onClick={() => {
             setKeyword('')
             setType('ALL')
             setActor('ALL')
+            auditLogsQuery.refetch()
           }}>
             刷新
           </Button>
@@ -276,14 +180,16 @@ export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
                       <td>
                         <div className="admin-audit-source">
                           <strong>{log.ip}</strong>
-                          <Text>{log.browser}</Text>
+                          <Text>{log.source}</Text>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {!logs.length ? (
                     <tr className="admin-audit-empty-row">
-                      <td className="admin-audit-empty-cell" colSpan={7}>暂无匹配的审计日志</td>
+                      <td className="admin-audit-empty-cell" colSpan={7}>
+                        {auditLogsQuery.isLoading ? '正在加载审计日志' : '暂无匹配的审计日志'}
+                      </td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -291,7 +197,7 @@ export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
             </div>
             <div className="admin-audit-pagination">
               <Text>共 {logs.length} 条</Text>
-              <span>10条/页</span>
+              <span>20条/页</span>
               <span aria-label="上一页">‹</span>
               <span className="is-active">1</span>
               <span aria-label="下一页">›</span>
@@ -308,7 +214,7 @@ export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
               <div>
                 <Text>{metric.label}</Text>
                 <strong>{metric.value}<em>次</em></strong>
-                <small>较昨日 {metric.trend}</small>
+                <small>{metric.caption}</small>
               </div>
             </section>
           ))}
@@ -318,7 +224,32 @@ export function AdminAuditPanel({ onOpenProfile }: AdminAuditPanelProps) {
   )
 }
 
-function AuditDetailCard({ log }: { log?: AuditLog }) {
+function toViewLog(log: AdminAuditLog): AuditViewLog {
+  const time = new Date(log.createdAt).toLocaleString('zh-CN', { hour12: false })
+  return {
+    ...log,
+    actor: log.operatorDisplayName,
+    actorAccount: `@${log.operatorUsername}`,
+    changeSummary: log.action,
+    ip: log.sourceIp ?? '未记录',
+    source: log.deviceId ? `设备 ${log.deviceId}` : '历史记录未采集设备',
+    steps: ['读取真实审计记录', log.action, '返回审计列表'],
+    time,
+    title: log.type,
+    tone: typeTone[log.type],
+  }
+}
+
+function buildMetrics(logs: AuditViewLog[]) {
+  return [
+    { icon: <SafetyCertificateOutlined />, label: '全部操作', tone: 'teal' as const, caption: '真实记录合计', value: String(logs.length) },
+    { icon: <ExclamationCircleOutlined />, label: '风险提示', tone: 'orange' as const, caption: '失败或警告记录', value: String(logs.filter((log) => log.result === '警告').length) },
+    { icon: <CheckCircleOutlined />, label: '核验记录', tone: 'green' as const, caption: '入园核验相关', value: String(logs.filter((log) => log.type.includes('核验')).length) },
+    { icon: <DownloadOutlined />, label: '退款记录', tone: 'blue' as const, caption: '退款审计相关', value: String(logs.filter((log) => log.type === '发起退款').length) },
+  ]
+}
+
+function AuditDetailCard({ log }: { log?: AuditViewLog }) {
   if (!log) {
     return (
       <aside className="admin-audit-detail-card">
@@ -347,9 +278,11 @@ function AuditDetailCard({ log }: { log?: AuditLog }) {
       <div className="admin-audit-detail-lines">
         <DetailLine label="操作编号" value={log.id} />
         <DetailLine label="操作人" value={`${log.actor}（${log.actorAccount}）`} />
-        <DetailLine label="角色" value="超级管理员" />
         <DetailLine label="IP 地址" value={log.ip} />
-        <DetailLine label="请求编号" value={log.requestId} />
+        <DetailLine label="设备编号" value={log.deviceId ?? '历史记录未采集'} />
+        <DetailLine label="登录会话" value={log.adminSessionId ? String(log.adminSessionId) : '历史记录未采集'} />
+        <DetailLine label="浏览器环境" value={log.userAgent ?? '历史记录未采集'} />
+        <DetailLine label="请求编号" value={log.requestId ?? '未记录'} />
         <DetailLine label="请求来源" value={log.source} />
       </div>
 
@@ -365,7 +298,7 @@ function AuditDetailCard({ log }: { log?: AuditLog }) {
       </div>
 
       <div className="admin-audit-change-card">
-        <strong>变更前后摘要</strong>
+        <strong>变更摘要</strong>
         <Text>{log.changeSummary}</Text>
       </div>
     </aside>
@@ -381,17 +314,9 @@ function DetailLine({ label, value }: { label: string; value: string }) {
   )
 }
 
-function auditIcon(type: AuditLog['type']) {
-  if (type === '登录后台') {
-    return <SafetyCertificateOutlined />
-  }
-
-  if (type === '修改票价' || type === '修改管理员账号') {
+function auditIcon(type: AdminAuditLogType) {
+  if (type === '系统设置' || type === '票种管理') {
     return <EditOutlined />
-  }
-
-  if (type === '导出报表') {
-    return <DownloadOutlined />
   }
 
   if (type === '发起退款') {

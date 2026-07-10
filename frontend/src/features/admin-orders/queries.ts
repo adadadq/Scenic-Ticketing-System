@@ -3,7 +3,9 @@ import { adminCheckInsApi, adminOrdersApi } from '../../shared/api/endpoints'
 import type {
   AdminBatchCheckInRequest,
   AdminBatchUndoCheckInRequest,
+  AdminCheckIn,
   AdminCheckInRequest,
+  AdminOrderDetail,
   AdminOrderListParams,
   AdminPartialRefundRequest,
   AdminRefundRequest,
@@ -21,7 +23,7 @@ import {
 
 export type AdminOrdersMode = 'mock' | 'api'
 
-export const adminOrdersMode: AdminOrdersMode = import.meta.env.VITE_ADMIN_ORDERS_MODE === 'api' ? 'api' : 'mock'
+export const adminOrdersMode: AdminOrdersMode = import.meta.env.VITE_ADMIN_ORDERS_MODE === 'mock' ? 'mock' : 'api'
 
 export const adminOrderQueryKeys = {
   detail: (orderNo: string, mode: AdminOrdersMode = adminOrdersMode) =>
@@ -43,6 +45,27 @@ export function normalizeAdminOrderListParams(params: AdminOrderListParams = {})
     ...(buyerPhone ? { buyerPhone } : {}),
     ...(params.page !== undefined ? { page: params.page } : {}),
     ...(params.pageSize !== undefined ? { pageSize: params.pageSize } : {}),
+  }
+}
+
+function markCheckedInOrderDetail(detail: AdminOrderDetail | null | undefined, result: AdminCheckIn) {
+  if (!detail) {
+    return detail
+  }
+
+  return {
+    ...detail,
+    orderStatus: result.orderStatus,
+    items: detail.items.map((item) => item.itemNo === result.itemNo
+      ? {
+          ...item,
+          itemStatus: result.itemStatus,
+          raftAssignedAt: result.checkedInAt,
+          raftNo: result.raftNo,
+          raftSeatNo: result.raftSeatNo,
+        }
+      : item,
+    ),
   }
 }
 
@@ -116,6 +139,9 @@ export function useAdminCheckInMutation() {
       return checkInMockAdminTicket(body.ticketCode)
     },
     onSuccess: (result) => {
+      queryClient.setQueryData(adminOrderQueryKeys.detail(result.orderNo), (detail: AdminOrderDetail | null | undefined) =>
+        markCheckedInOrderDetail(detail, result),
+      )
       queryClient.invalidateQueries({ queryKey: ['admin-orders', adminOrdersMode] })
       queryClient.invalidateQueries({ queryKey: adminOrderQueryKeys.detail(result.orderNo) })
     },
@@ -141,6 +167,10 @@ export function useAdminBatchCheckInMutation() {
       queryClient.invalidateQueries({ queryKey: ['admin-orders', adminOrdersMode] })
       result.results.forEach((item) => {
         if (item.success && item.checkIn) {
+          queryClient.setQueryData(
+            adminOrderQueryKeys.detail(item.checkIn.orderNo),
+            (detail: AdminOrderDetail | null | undefined) => markCheckedInOrderDetail(detail, item.checkIn),
+          )
           queryClient.invalidateQueries({ queryKey: adminOrderQueryKeys.detail(item.checkIn.orderNo) })
         }
       })

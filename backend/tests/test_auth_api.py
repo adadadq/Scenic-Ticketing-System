@@ -307,7 +307,7 @@ def test_visitor_login_is_rate_limited_per_client_and_username():
 
 def test_rate_limited_first_login_does_not_create_visitor_session_or_cookie():
     repo = FakeAuthRepository()
-    client_host = "rate-limit-first-login"
+    client_host = "198.51.100.31"
     current_time = [1000.0]
     limiter = InMemoryLoginRateLimiter(
         max_attempts=1,
@@ -340,7 +340,7 @@ def test_rate_limited_first_login_does_not_create_visitor_session_or_cookie():
 def test_rate_limited_first_login_can_retry_after_window_with_same_csrf():
     repo = FakeAuthRepository()
     seed_registered_account(repo)
-    client_host = "rate-limit-retry-login"
+    client_host = "198.51.100.32"
     current_time = [1000.0]
     limiter = InMemoryLoginRateLimiter(
         max_attempts=1,

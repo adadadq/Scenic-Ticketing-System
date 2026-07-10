@@ -35,9 +35,10 @@ def get_admin_me(
 def update_admin_profile(
     payload: AdminProfileUpdateRequest,
     request: Request,
+    response: Response,
     admin_auth_service: AdminAuthService = Depends(get_admin_auth_service),
 ) -> dict:
-    admin = admin_auth_service.update_profile(payload, request)
+    admin = admin_auth_service.update_profile(payload, request, response)
     return success_response(request, admin.model_dump(by_alias=True, mode="json"))
 
 

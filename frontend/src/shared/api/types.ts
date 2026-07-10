@@ -25,6 +25,8 @@ export type { ProductPublic, TimeSlotPublic } from './types/catalog'
 
 export type { PassengerTemplate, PassengerTemplateRequest } from './types/passengers'
 
+export type { AdminAuditLog, AdminAuditLogList, AdminAuditLogType } from './types/adminAudit'
+
 export type {
   AdminOrderDetail,
   AdminOrderItem,
@@ -112,9 +114,4 @@ export type {
   AdminSystemSettingsUpdateRequest,
 } from './types/adminSettings'
 
-export type {
-  AdminTicket,
-  AdminTicketSaveRequest,
-  AdminTicketSlotQuota,
-  AdminTicketStatus,
-} from './types/adminTickets'
+export type { AdminTicket, AdminTicketSaveRequest, AdminTicketSlotQuota, AdminTicketStatus } from './types/adminTickets'

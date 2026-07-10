@@ -184,6 +184,52 @@ class FakeOrderRepository:
             quota_remaining=5 - self.quota_sold,
         )
 
+    def expire_unpaid_orders(self, visitor_id: int, expired_before: datetime) -> int:
+        expired_count = 0
+        for order_no, order in list(self.orders.items()):
+            if (
+                order.visitor_id == visitor_id
+                and order.order_status == "CREATED"
+                and order.payment_status == "UNPAID"
+                and order.order_time <= expired_before
+            ):
+                self.orders[order_no] = OrderRecord(
+                    order_id=order.order_id,
+                    order_no=order.order_no,
+                    visitor_id=order.visitor_id,
+                    buyer_name=order.buyer_name,
+                    buyer_phone=order.buyer_phone,
+                    order_status="CANCELLED",
+                    payment_status=order.payment_status,
+                    total_amount=order.total_amount,
+                    payable_amount=order.payable_amount,
+                    order_time=order.order_time,
+                    items=[
+                        OrderCreateItemRecord(
+                            item_no=item.item_no,
+                            product_id=item.product_id,
+                            ticket_type_id=item.ticket_type_id,
+                            product_name=item.product_name,
+                            ticket_name=item.ticket_name,
+                            time_slot_id=item.time_slot_id,
+                            visit_date=item.visit_date,
+                            slot_start_time=item.slot_start_time,
+                            slot_end_time=item.slot_end_time,
+                            original_price=item.original_price,
+                            final_price=item.final_price,
+                            item_status="CANCELLED" if item.item_status == "PENDING_PAYMENT" else item.item_status,
+                            ticket_code=item.ticket_code,
+                            passenger_name=item.passenger_name,
+                            passenger_id_type=item.passenger_id_type,
+                            passenger_id_number=item.passenger_id_number,
+                            passenger_phone=item.passenger_phone,
+                        )
+                        for item in order.items
+                    ],
+                )
+                expired_count += 1
+        return expired_count
+
     def create_pending_order(
         self,
         order_no: str,
@@ -360,6 +406,21 @@ def test_registered_visitor_creates_pending_order_without_deducting_inventory():
     assert len(data["items"]) == 2
     assert data["items"][0]["itemStatus"] == "PENDING_PAYMENT"
     assert order_repo.quota_sold == quota_sold_before
+
+
+def test_create_order_expires_old_unpaid_orders_before_passenger_slot_check():
+    order_repo = FakeOrderRepository()
+    client = build_client(FakeAuthRepository(), order_repo)
+    headers = login_registered(client)
+    first = client.post("/api/orders", json=valid_order_payload(), headers=headers)
+
+    second = client.post("/api/orders", json=valid_order_payload(), headers=headers)
+
+    old_order = order_repo.orders[first.json()["data"]["orderNo"]]
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert old_order.order_status == "CANCELLED"
+    assert old_order.items[0].item_status == "CANCELLED"
 
 
 def test_create_order_accepts_refreshed_csrf_token_after_session_rebind():
@@ -604,6 +665,32 @@ def test_postgres_create_pending_order_does_not_update_inventory(monkeypatch):
     assert item_insert_params[12] == Decimal("168.00")
     assert item_insert_params[13] == Decimal("40.00")
     assert item_insert_params[14] == Decimal("128.00")
+
+
+def test_postgres_expires_unpaid_orders_and_pending_items(monkeypatch):
+    connection = ScriptedConnection(results=[
+        [{"id": 1}, {"id": 2}],
+        None,
+        None,
+    ])
+    monkeypatch.setattr(order_repository_module, "connect_db", lambda: connection)
+
+    expired_count = PostgresOrderRepository().expire_unpaid_orders(
+        visitor_id=7,
+        expired_before=datetime(2026, 7, 1, 9, 15, tzinfo=UTC),
+    )
+
+    assert expired_count == 2
+    assert "FOR UPDATE" in connection.queries[0][0]
+    assert "order_status = 'CREATED'" in connection.queries[0][0]
+    assert "payment_status = 'UNPAID'" in connection.queries[0][0]
+    assert "order_time <= %s" in connection.queries[0][0]
+    assert connection.queries[0][1] == (7, datetime(2026, 7, 1, 9, 15, tzinfo=UTC))
+    assert "UPDATE ticket_order_item" in connection.queries[1][0]
+    assert "item_status = 'CANCELLED'" in connection.queries[1][0]
+    assert "item_status = 'PENDING_PAYMENT'" in connection.queries[1][0]
+    assert "UPDATE ticket_order" in connection.queries[2][0]
+    assert "order_status = 'CANCELLED'" in connection.queries[2][0]
 
 
 def test_postgres_order_detail_filters_by_visitor_id(monkeypatch):

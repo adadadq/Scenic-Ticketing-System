@@ -58,7 +58,12 @@ export function useAdminProfileUpdateMutation() {
 
   return useMutation({
     mutationFn: (body: AdminProfileUpdateRequest) => adminAuthApi.updateProfile(body),
-    onSuccess: (admin) => {
+    onSuccess: (admin, body) => {
+      if (body.newPassword) {
+        resetCsrfToken()
+        queryClient.setQueryData(adminAuthQueryKeys.me, null)
+        return
+      }
       queryClient.setQueryData(adminAuthQueryKeys.me, admin)
     },
   })

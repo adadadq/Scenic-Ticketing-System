@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.admin_audit_logs import router as admin_audit_logs_router
 from app.api.admin_auth import router as admin_auth_router
 from app.api.admin_check_ins import check_in_failure_logs_router as admin_check_in_failure_logs_router
 from app.api.admin_check_ins import check_in_logs_router as admin_check_in_logs_router
@@ -321,6 +322,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, unhandled_error_handler)
 
     app.include_router(admin_auth_router)
+    app.include_router(admin_audit_logs_router)
     app.include_router(admin_check_in_failure_logs_router)
     app.include_router(admin_check_in_logs_router)
     app.include_router(admin_check_ins_router)

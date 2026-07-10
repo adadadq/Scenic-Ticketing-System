@@ -9,7 +9,7 @@ import { listMockAdminCheckInFailureAuditLogSearch } from './mockData'
 export type AdminCheckInFailureLogsMode = 'mock' | 'api'
 
 export const adminCheckInFailureLogsMode: AdminCheckInFailureLogsMode =
-  import.meta.env.VITE_ADMIN_CHECK_IN_FAILURE_LOGS_MODE === 'api' ? 'api' : 'mock'
+  import.meta.env.VITE_ADMIN_CHECK_IN_FAILURE_LOGS_MODE === 'mock' ? 'mock' : 'api'
 
 export const adminCheckInFailureLogQueryKeys = {
   list: (

@@ -14,6 +14,7 @@ from fastapi import Depends, Request
 from pydantic import ValidationError
 
 from app.core.config import AppSettings, get_settings
+from app.core.admin_audit import get_admin_audit_context
 from app.core.errors import AppError
 from app.repositories.auth import VisitorRecord
 from app.repositories.orders import (
@@ -53,6 +54,7 @@ from app.repositories.orders import (
     OrderPaymentAmountMismatchError,
     OrderNotRefundableError,
     OrderPaymentStateError,
+    PAYMENT_HOLD_MINUTES,
     OrderQuotaNotEnoughError,
     OrderRecord,
     OrderRefundItemsInvalidError,
@@ -145,6 +147,7 @@ class OrderService:
 
     def create_order(self, payload: OrderCreateRequest, request: Request) -> OrderMeDTO:
         visitor = self.auth_service.require_registered_visitor(request)
+        self.expire_unpaid_orders(visitor.id)
         pending_items: list[PendingOrderItemInput] = []
         scenic_spot_ids: set[int] = set()
         grouped_quantities: dict[tuple[int, int, date], int] = {}
@@ -246,6 +249,7 @@ class OrderService:
 
     def pay_order(self, order_no: str, idempotency_key: str, request: Request) -> OrderMeDTO:
         visitor = self.current_visitor(request)
+        self.expire_unpaid_orders(visitor.id)
         try:
             order = self.repository.pay_order(
                 order_no=order_no,
@@ -263,6 +267,12 @@ class OrderService:
         if order is None:
             raise AppError(404, "ORDER_NOT_FOUND", ORDER_NOT_FOUND_MESSAGE)
         return self.to_order_dto(order)
+
+    def expire_unpaid_orders(self, visitor_id: int) -> None:
+        self.repository.expire_unpaid_orders(
+            visitor_id,
+            datetime.now(UTC) - timedelta(minutes=PAYMENT_HOLD_MINUTES),
+        )
 
     def cancel_order(self, order_no: str, request: Request) -> OrderMeDTO:
         visitor = self.current_visitor(request)
@@ -943,12 +953,17 @@ class AdminCheckInService:
 
     @staticmethod
     def to_check_in_audit_input(admin, request: Request, reason: str | None = None) -> AdminCheckInAuditInput:
+        context = get_admin_audit_context(request, admin)
         return AdminCheckInAuditInput(
-            operator_admin_user_id=admin.id,
-            operator_username=admin.username,
-            operator_display_name=admin.display_name,
-            request_id=AdminCheckInService.to_check_in_audit_request_id(getattr(request.state, "request_id", None)),
+            operator_admin_user_id=context.admin_user_id,
+            operator_username=context.operator_username,
+            operator_display_name=context.operator_display_name,
+            request_id=AdminCheckInService.to_check_in_audit_request_id(context.request_id),
             reason=reason,
+            source_ip=context.source_ip,
+            device_id=context.device_id,
+            admin_session_id=context.admin_session_id,
+            user_agent=context.user_agent,
         )
 
     @staticmethod
@@ -1344,12 +1359,17 @@ class AdminRefundService:
 
     @staticmethod
     def to_refund_audit_input(admin, reason: str | None, request: Request) -> AdminRefundAuditInput:
+        context = get_admin_audit_context(request, admin)
         return AdminRefundAuditInput(
-            operator_admin_user_id=admin.id,
-            operator_username=admin.username,
-            operator_display_name=admin.display_name,
+            operator_admin_user_id=context.admin_user_id,
+            operator_username=context.operator_username,
+            operator_display_name=context.operator_display_name,
             reason=reason,
-            request_id=AdminRefundService.to_refund_audit_request_id(getattr(request.state, "request_id", None)),
+            request_id=AdminRefundService.to_refund_audit_request_id(context.request_id),
+            source_ip=context.source_ip,
+            device_id=context.device_id,
+            admin_session_id=context.admin_session_id,
+            user_agent=context.user_agent,
         )
 
     @staticmethod

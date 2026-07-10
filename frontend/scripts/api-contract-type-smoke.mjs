@@ -162,6 +162,9 @@ export async function runSharedApiTypeContracts() {
     passengerIdType: { optional: false, type: 'string' },
     passengerIdNumberMasked: { optional: false, type: 'string' },
     passengerPhoneMasked: { optional: false, type: 'string' },
+    raftNo: { optional: true, type: 'number | null' },
+    raftSeatNo: { optional: true, type: 'number | null' },
+    raftAssignedAt: { optional: true, type: 'string | null' },
   })
   assertExactPropertyContract(types.sourceFile, 'OrderMe', {
     orderNo: { optional: false, type: 'string' },
@@ -223,6 +226,9 @@ export async function runSharedApiTypeContracts() {
     passengerIdType: { optional: false, type: 'string' },
     passengerIdNumberMasked: { optional: false, type: 'string' },
     passengerPhoneMasked: { optional: false, type: 'string' },
+    raftNo: { optional: true, type: 'number | null' },
+    raftSeatNo: { optional: true, type: 'number | null' },
+    raftAssignedAt: { optional: true, type: 'string | null' },
   })
   assertExactPropertyContract(types.sourceFile, 'AdminOrderDetail', {
     orderNo: { optional: false, type: 'string' },
@@ -253,6 +259,8 @@ export async function runSharedApiTypeContracts() {
     orderStatus: { optional: false, type: 'AdminOrderStatus' },
     itemStatus: { optional: false, type: 'OrderItemStatus' },
     checkedInAt: { optional: false, type: 'string' },
+    raftNo: { optional: true, type: 'number | null' },
+    raftSeatNo: { optional: true, type: 'number | null' },
   })
   assertExactPropertyContract(types.sourceFile, 'AdminUndoCheckIn', {
     orderNo: { optional: false, type: 'string' },

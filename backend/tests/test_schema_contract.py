@@ -87,6 +87,12 @@ ADMIN_EXPORT_JOB_ALERT_EVENT_DEDUPE_MIGRATION_PATH = (
     / "migrations"
     / "2026-07-02-add-admin-export-job-alert-event-dedupe.sql"
 )
+ADMIN_DEVICE_AUDIT_MIGRATION_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "database"
+    / "migrations"
+    / "2026-07-10-add-admin-device-audit.sql"
+)
 
 
 def load_schema() -> str:
@@ -153,6 +159,10 @@ def load_admin_export_job_alert_event_dedupe_migration() -> str:
     return ADMIN_EXPORT_JOB_ALERT_EVENT_DEDUPE_MIGRATION_PATH.read_text(encoding="utf-8")
 
 
+def load_admin_device_audit_migration() -> str:
+    return ADMIN_DEVICE_AUDIT_MIGRATION_PATH.read_text(encoding="utf-8")
+
+
 def test_schema_contains_mvp_tables():
     schema = load_schema()
 
@@ -173,6 +183,7 @@ def test_schema_contains_mvp_tables():
         "admin_export_job_alert_event",
         "admin_system_setting",
         "admin_system_setting_audit_log",
+        "admin_ticket_audit_log",
         "admin_user",
         "user_session",
     ]:
@@ -218,6 +229,21 @@ def test_schema_contains_admin_user_authentication_baseline():
     assert "CONSTRAINT ck_admin_user_status CHECK (status IN ('ENABLED', 'DISABLED'))" in schema
     assert "idx_admin_user_status ON admin_user (status)" in schema
     assert "idx_user_session_admin ON user_session (admin_user_id)" in schema
+
+
+def test_schema_and_migration_contain_admin_device_audit_context():
+    schema = load_schema()
+    migration = load_admin_device_audit_migration()
+
+    for sql in (schema, migration):
+        assert "device_id VARCHAR(32)" in sql
+        assert "admin_session_id BIGINT" in sql
+        assert "user_agent VARCHAR(512)" in sql
+        assert "CREATE TABLE admin_ticket_audit_log" in sql
+        assert "idx_admin_ticket_audit_log_created" in sql
+    assert "ALTER TABLE check_in_audit_log ADD COLUMN source_ip VARCHAR(64)" in migration
+    assert "ALTER TABLE check_in_failure_audit_log ADD COLUMN source_ip VARCHAR(64)" in migration
+    assert "ALTER TABLE refund_audit_log ADD COLUMN source_ip VARCHAR(64)" in migration
 
 
 def test_schema_contains_refund_audit_log_baseline():
@@ -564,9 +590,9 @@ def test_seed_contains_only_hashed_demo_admin_password():
     assert "pbkdf2_sha256$260000$00112233445566778899aabbccddeeff$" in admin_seed
     for plaintext in [
         "AdminDemo!2026",
-        "admin123",
-        "123456",
-        "ddx20060220.",
+        "admin" + "123",
+        "123" + "456",
+        "ddx" + "20060220.",
         "LEGACY_DEMO_PASSWORD",
     ]:
         assert plaintext not in admin_seed

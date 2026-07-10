@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -13,6 +14,9 @@ from app.core.errors import AppError
 
 
 TOKEN_BYTES = 32
+ADMIN_DEVICE_COOKIE_NAME = "scenic_admin_device"
+ADMIN_DEVICE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60
+ADMIN_DEVICE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
 PASSWORD_HASH_ALGORITHM = "pbkdf2_sha256"
 PASSWORD_HASH_ITERATIONS = 260000
 PASSWORD_SALT_BYTES = 16
@@ -109,6 +113,30 @@ def set_session_cookie(
         samesite=security_settings.cookie_samesite,
         path="/",
     )
+
+
+def ensure_admin_device_cookie(request: Request, response: Response) -> str:
+    token = request.cookies.get(ADMIN_DEVICE_COOKIE_NAME, "").strip()
+    if not ADMIN_DEVICE_TOKEN_RE.fullmatch(token):
+        token = generate_token()
+        settings = get_settings().security
+        response.set_cookie(
+            key=ADMIN_DEVICE_COOKIE_NAME,
+            value=token,
+            max_age=ADMIN_DEVICE_COOKIE_MAX_AGE,
+            httponly=True,
+            secure=settings.cookie_secure,
+            samesite="lax",
+            path="/",
+        )
+    return token
+
+
+def get_admin_device_id(request: Request) -> str | None:
+    token = request.cookies.get(ADMIN_DEVICE_COOKIE_NAME, "").strip()
+    if not ADMIN_DEVICE_TOKEN_RE.fullmatch(token):
+        return None
+    return hash_secret(token)[:24]
 
 
 def clear_session_cookie(

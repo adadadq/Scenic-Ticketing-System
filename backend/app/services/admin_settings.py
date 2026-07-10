@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import Depends, Request
 
+from app.core.admin_audit import get_admin_audit_context
 from app.core.errors import AppError
 from app.repositories.admin_settings import (
     AdminSystemSettingLogRecord,
@@ -90,13 +91,17 @@ class AdminSystemSettingsService:
         }
         if changed_patch:
             action = self.describe_changes(changed_patch)
+            audit = get_admin_audit_context(request, session_record.admin)
             settings, updated_at = self.repository.update_settings(
                 changed_patch,
-                admin_user_id=session_record.admin.id,
-                operator_username=session_record.admin.username,
-                operator_display_name=session_record.admin.display_name,
-                request_id=getattr(request.state, "request_id", None),
-                source_ip=request.client.host if request.client else None,
+                admin_user_id=audit.admin_user_id,
+                operator_username=audit.operator_username,
+                operator_display_name=audit.operator_display_name,
+                request_id=audit.request_id,
+                source_ip=audit.source_ip,
+                device_id=audit.device_id,
+                admin_session_id=audit.admin_session_id,
+                user_agent=audit.user_agent,
                 action=action,
                 changed_keys=list(changed_patch),
             )

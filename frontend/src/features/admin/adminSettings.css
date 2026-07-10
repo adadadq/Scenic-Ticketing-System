@@ -3,6 +3,8 @@
 }
 
 .admin-shell-settings .admin-content {
+  height: 100vh;
+  overflow-y: auto;
   padding: 0;
 }
 
@@ -16,6 +18,12 @@
 
 .admin-shell-settings {
   overflow-x: hidden;
+}
+
+.admin-shell-settings .admin-main {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 .admin-settings-page {

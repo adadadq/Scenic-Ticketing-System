@@ -19,6 +19,7 @@ import type {
   AdminBatchCheckInRequest,
   AdminBatchUndoCheckIn,
   AdminBatchUndoCheckInRequest,
+  AdminAuditLogList,
   AdminCheckIn,
   AdminCheckInAuditLogExportParams,
   AdminCheckInFailureAuditLogExportParams,
@@ -107,6 +108,10 @@ export const adminTicketsApi = {
     apiRequest<AdminTicket>(`/api/admin/tickets/${ticketId}`, { body, method: 'PATCH' }),
   delete: (ticketId: number) =>
     apiRequest<{ deleted: boolean }>(`/api/admin/tickets/${ticketId}`, { method: 'DELETE' }),
+}
+
+export const adminAuditLogsApi = {
+  list: () => apiRequest<AdminAuditLogList>('/api/admin/audit-logs'),
 }
 
 export const announcementsApi = {

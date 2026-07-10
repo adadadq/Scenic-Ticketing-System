@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.core.security import hash_secret
 from app.repositories.auth import get_auth_repository
 from app.repositories.admin_settings import AdminSystemSettingLogRecord, get_admin_system_settings_repository
 
@@ -14,6 +15,7 @@ class FakeAdminSystemSettingsRepository:
     def __init__(self):
         self.values: dict[str, str] = {}
         self.logs: list[AdminSystemSettingLogRecord] = []
+        self.last_audit_context: dict | None = None
 
     def get_settings(self):
         return self.values.copy(), None
@@ -27,10 +29,19 @@ class FakeAdminSystemSettingsRepository:
         operator_display_name,
         request_id,
         source_ip,
+        device_id,
+        admin_session_id,
+        user_agent,
         action,
         changed_keys,
     ):
         self.values.update(values)
+        self.last_audit_context = {
+            "source_ip": source_ip,
+            "device_id": device_id,
+            "admin_session_id": admin_session_id,
+            "user_agent": user_agent,
+        }
         self.logs.insert(
             0,
             AdminSystemSettingLogRecord(
@@ -51,7 +62,7 @@ def build_client(auth_repo: FakeAuthRepository, settings_repo: FakeAdminSystemSe
     app = create_app()
     app.dependency_overrides[get_auth_repository] = lambda: auth_repo
     app.dependency_overrides[get_admin_system_settings_repository] = lambda: settings_repo
-    return TestClient(app)
+    return TestClient(app, client=("203.0.113.77", 50000))
 
 
 def test_admin_can_update_basic_system_settings_and_get_audit_log():
@@ -76,6 +87,12 @@ def test_admin_can_update_basic_system_settings_and_get_audit_log():
     assert data["perOrderLimit"] == 12
     assert data["recentLogs"][0]["operatorUsername"] == "admin"
     assert data["recentLogs"][0]["action"] == "修改了系统配置：景区名称等 3 项"
+    assert settings_repo.last_audit_context == {
+        "source_ip": "203.0.113.77",
+        "device_id": hash_secret(client.cookies.get("scenic_admin_device"))[:24],
+        "admin_session_id": 1,
+        "user_agent": "testclient",
+    }
 
 
 def test_operator_cannot_update_system_settings():

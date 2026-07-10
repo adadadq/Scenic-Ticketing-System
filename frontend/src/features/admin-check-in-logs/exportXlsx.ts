@@ -5,7 +5,7 @@ import type { AdminCheckInAuditLog, AdminCheckInAuditLogExportParams } from '../
 export type AdminCheckInLogsMode = 'mock' | 'api'
 
 export const adminCheckInLogsMode: AdminCheckInLogsMode =
-  import.meta.env.VITE_ADMIN_CHECK_IN_LOGS_MODE === 'api' ? 'api' : 'mock'
+  import.meta.env.VITE_ADMIN_CHECK_IN_LOGS_MODE === 'mock' ? 'mock' : 'api'
 
 const adminCheckInLogHeaders: Array<keyof AdminCheckInAuditLog> = [
   'orderNo',

@@ -90,6 +90,7 @@ GET  /api/admin/reports/orders.csv
 GET  /api/admin/reports/orders.xlsx
 GET  /api/admin/settings
 PATCH /api/admin/settings
+GET  /api/admin/audit-logs
 GET  /api/admin/tickets
 POST /api/admin/tickets
 PATCH /api/admin/tickets/{ticket_id}
@@ -200,6 +201,12 @@ POST /api/payments/mock/callback
 
 - `GET /api/admin/settings` 只接受管理员 session，返回系统设置和最近 3 条设置变更日志；这是只读 GET，不要求 CSRF header。
 - `PATCH /api/admin/settings` 只接受管理员 session，并且必须携带 CSRF header；请求体只允许提交要修改的设置字段，成功返回最新 `AdminSystemSettingsDTO`。
+
+## Admin Audit Log DTO 约定
+
+- `GET /api/admin/audit-logs` 只接受管理员 session，统一返回系统设置、票种管理、核验、核验失败和退款审计记录。
+- 每条新审计记录包含可信 `sourceIp`、浏览器设备摘要 `deviceId`、`adminSessionId`、`userAgent` 和 `requestId`；迁移前的历史记录允许这些字段为空。
+- 管理员设备 Cookie 只用于审计区分，不参与认证或授权，API 不返回原始设备令牌。
 
 ## Admin Tickets DTO 约定
 

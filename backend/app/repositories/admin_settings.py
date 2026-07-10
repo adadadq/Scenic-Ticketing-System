@@ -29,6 +29,9 @@ class AdminSystemSettingsRepository(Protocol):
         operator_display_name: str,
         request_id: str | None,
         source_ip: str | None,
+        device_id: str | None,
+        admin_session_id: int | None,
+        user_agent: str | None,
         action: str,
         changed_keys: list[str],
     ) -> tuple[dict[str, str], datetime | None]:
@@ -61,6 +64,9 @@ class PostgresAdminSystemSettingsRepository:
                     operator_display_name VARCHAR(100) NOT NULL,
                     request_id VARCHAR(64),
                     source_ip VARCHAR(64),
+                    device_id VARCHAR(32),
+                    admin_session_id BIGINT,
+                    user_agent VARCHAR(512),
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -93,6 +99,9 @@ class PostgresAdminSystemSettingsRepository:
         operator_display_name: str,
         request_id: str | None,
         source_ip: str | None,
+        device_id: str | None,
+        admin_session_id: int | None,
+        user_agent: str | None,
         action: str,
         changed_keys: list[str],
     ) -> tuple[dict[str, str], datetime | None]:
@@ -100,16 +109,23 @@ class PostgresAdminSystemSettingsRepository:
         with connect_db() as connection:
             with transaction(connection):
                 for key, value in values.items():
-                    connection.execute(
+                    cursor = connection.execute(
                         """
-                        INSERT INTO admin_system_setting (setting_key, setting_value, updated_at)
-                        VALUES (%s, %s, CURRENT_TIMESTAMP)
-                        ON CONFLICT (setting_key)
-                        DO UPDATE SET setting_value = EXCLUDED.setting_value,
-                                      updated_at = CURRENT_TIMESTAMP
+                        UPDATE admin_system_setting
+                        SET setting_value = %s,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE setting_key = %s
                         """,
-                        (key, value),
+                        (value, key),
                     )
+                    if cursor.rowcount == 0:
+                        connection.execute(
+                            """
+                            INSERT INTO admin_system_setting (setting_key, setting_value, updated_at)
+                            VALUES (%s, %s, CURRENT_TIMESTAMP)
+                            """,
+                            (key, value),
+                        )
                 if changed_keys:
                     connection.execute(
                         """
@@ -120,9 +136,12 @@ class PostgresAdminSystemSettingsRepository:
                             operator_username,
                             operator_display_name,
                             request_id,
-                            source_ip
+                            source_ip,
+                            device_id,
+                            admin_session_id,
+                            user_agent
                         )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             ",".join(changed_keys),
@@ -132,6 +151,9 @@ class PostgresAdminSystemSettingsRepository:
                             operator_display_name,
                             request_id,
                             source_ip,
+                            device_id,
+                            admin_session_id,
+                            user_agent,
                         ),
                     )
                 rows = connection.execute(

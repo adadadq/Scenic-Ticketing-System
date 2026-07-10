@@ -106,6 +106,61 @@ function AdminLockedPage({ description }: { description: string }) {
   )
 }
 
+function AdminOperationsWorkflowStrip() {
+  const items = [
+    { icon: <BarChartOutlined />, title: '1. 看报表', text: '先确认收入、票数和趋势。' },
+    { icon: <AppstoreAddOutlined />, title: '2. 管票种', text: '维护价格、库存和上下架。' },
+    { icon: <OrderedListOutlined />, title: '3. 查订单', text: '按订单 read-model 定位业务对象。' },
+    { icon: <CheckCircleOutlined />, title: '4. 做变更', text: '核验、退款等操作走防伪校验。' },
+    { icon: <AuditOutlined />, title: '5. 留证据', text: '回到审计和导出记录复核。' },
+  ]
+
+  return (
+    <section className="admin-operations-workflow-strip" aria-label="后台操作流程">
+      <div className="admin-operations-workflow-heading">
+        <Text strong>先读数据，再管理票种，最后执行状态变更并回到审计证据</Text>
+        <Text type="secondary">后台操作从只读视图开始，状态变更后回到审计记录闭环。</Text>
+      </div>
+      <div className="admin-operations-workflow-grid">
+        {items.map((item) => (
+          <div className="admin-operations-workflow-item" key={item.title}>
+            <span className="admin-operations-workflow-icon">{item.icon}</span>
+            <div>
+              <Text strong>{item.title}</Text>
+              <Text type="secondary">{item.text}</Text>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function AdminOperationsBoundaryStrip() {
+  const items = [
+    { title: '只读视图', text: '报表和订单列表不展示完整手机号或证件号。' },
+    { title: '状态变更', text: '核验、退款和库存变化由后端计算状态、金额和库存。' },
+    { title: '审计导出', text: '真实后端接入时必须审计留痕，错误态保留错误码和请求编号。' },
+  ]
+
+  return (
+    <section className="admin-operations-boundary-strip" aria-label="后台操作边界">
+      <div className="admin-operations-boundary-heading">
+        <Text strong>后台操作按只读视图、状态变更、审计导出分区推进</Text>
+        <Text type="secondary">每个分区只暴露完成当前任务需要的数据。</Text>
+      </div>
+      <div className="admin-operations-boundary-grid">
+        {items.map((item) => (
+          <div className="admin-operations-boundary-item" key={item.title}>
+            <Text strong>{item.title}</Text>
+            <Text type="secondary">{item.text}</Text>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function trendChartMax(values: number[]) {
   const max = Math.max(...values, 1)
   const step = max >= 1000 ? 10000 : max >= 100 ? 100 : 20
@@ -249,6 +304,9 @@ function AdminOverviewPage({
       </div>
 
       <div className="admin-dashboard-body">
+        <AdminOperationsWorkflowStrip />
+        <AdminOperationsBoundaryStrip />
+
         <section className="admin-dashboard-section">
           <Title level={2}>今日概览</Title>
           <div className="admin-dashboard-metrics">
@@ -336,7 +394,7 @@ function AdminOverviewPage({
 
         <div className="admin-dashboard-entry-grid">
           {entryCards.map((item) => (
-            <button className="admin-dashboard-entry" key={item.title} type="button" onClick={() => onOpenPage(item.page)}>
+            <button className="admin-dashboard-entry admin-page-entry-card" key={item.title} type="button" onClick={() => onOpenPage(item.page)}>
               <span>{item.icon}</span>
               <div>
                 <strong>{item.title}</strong>

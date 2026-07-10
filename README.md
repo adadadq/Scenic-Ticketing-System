@@ -1,46 +1,8 @@
 # 景区票务重构项目
 
-本项目将原有票务系统重构为 FastAPI + React + Vite + Ant Design，覆盖游客购票、实名出行人、模拟支付、订单管理、票码核销、退款处理、数据报表、导出任务和后台审计等核心流程。
+本项目正在把原有票务系统重构为 FastAPI + React + Vite + Ant Design。当前对话负责后端，前端页面和交互由另一个对话并行推进。
 
 旧版 Node / Express / 静态页面基线已归档到 `legacy-node/`，只作为参考源，不作为当前主线继续开发。
-
-## 快速运行
-
-本项目包含 FastAPI 后端、React/Vite 前端和 PostgreSQL/openGauss 风格数据库脚本。推荐先使用 PostgreSQL 本地运行。
-
-1. 准备数据库：
-
-```bash
-createdb scenic_ticket
-psql scenic_ticket < database/schema.sql
-psql scenic_ticket < database/seed.sql
-```
-
-如果本机数据库用户名、端口或密码不同，复制 `.env.example` 为 `.env` 后修改 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD`。
-
-2. 启动后端：
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r backend/requirements.txt
-uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
-```
-
-3. 启动前端：
-
-```bash
-cd frontend
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173
-```
-
-4. 访问页面：
-
-- 游客端：`http://127.0.0.1:5173/#/visitor/booking`
-- 管理端：`http://127.0.0.1:5173/#/admin`
-
-演示管理员账号见 `database/seed.sql`，默认用户名为 `demo_admin`，密码为 `123456`。正式环境请在首次部署后立即修改默认密码。
 
 ## 当前后端能力
 

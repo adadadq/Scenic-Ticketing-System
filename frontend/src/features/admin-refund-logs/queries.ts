@@ -6,7 +6,7 @@ import { listMockAdminRefundAuditLogSearch } from './mockData'
 export type AdminRefundLogsMode = 'mock' | 'api'
 
 export const adminRefundLogsMode: AdminRefundLogsMode =
-  import.meta.env.VITE_ADMIN_REFUND_LOGS_MODE === 'api' ? 'api' : 'mock'
+  import.meta.env.VITE_ADMIN_REFUND_LOGS_MODE === 'mock' ? 'mock' : 'api'
 
 export const adminRefundLogQueryKeys = {
   list: (params: AdminRefundAuditLogParams = {}, mode: AdminRefundLogsMode = adminRefundLogsMode) =>

@@ -1562,6 +1562,24 @@
   margin: 0;
 }
 
+.admin-ticket-editor-empty {
+  align-items: center;
+  color: #526171;
+  display: flex;
+  min-height: 360px;
+  padding: 32px 24px;
+}
+
+.admin-ticket-editor-empty .ant-empty {
+  margin: auto;
+}
+
+.admin-ticket-editor-empty .ant-empty-description {
+  color: #526171;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
 .admin-ticket-editor .ant-form {
   padding: 16px 18px 0;
 }
@@ -1612,7 +1630,7 @@
 .admin-ticket-slot-editor {
   display: grid;
   gap: 8px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
 }
 
 .admin-ticket-slot-quota {

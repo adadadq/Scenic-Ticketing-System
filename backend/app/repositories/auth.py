@@ -106,6 +106,9 @@ class AuthRepository(Protocol):
     def revoke_session(self, session_token_hash: str) -> None:
         ...
 
+    def revoke_admin_sessions(self, admin_user_id: int) -> None:
+        ...
+
     def update_session_csrf(self, session_token_hash: str, csrf_token_hash: str, now: datetime) -> None:
         ...
 
@@ -444,6 +447,19 @@ class PostgresAuthRepository:
                 WHERE session_token_hash = %s AND revoked_at IS NULL
                 """,
                 (session_token_hash,),
+            )
+
+    def revoke_admin_sessions(self, admin_user_id: int) -> None:
+        with connect_db() as connection:
+            connection.execute(
+                """
+                UPDATE user_session
+                SET revoked_at = CURRENT_TIMESTAMP
+                WHERE account_type = 'ADMIN'
+                  AND admin_user_id = %s
+                  AND revoked_at IS NULL
+                """,
+                (admin_user_id,),
             )
 
     def update_session_csrf(self, session_token_hash: str, csrf_token_hash: str, now: datetime) -> None:

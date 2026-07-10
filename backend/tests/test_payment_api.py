@@ -46,11 +46,13 @@ class FakePaymentRepository:
         quota_remaining: int = 5,
         fail_after_stock: bool = False,
         unhandled_error_text: str | None = None,
+        expire_on_call: bool = False,
     ):
         self.quota_remaining = quota_remaining
         self.quota_sold = 0
         self.fail_after_stock = fail_after_stock
         self.unhandled_error_text = unhandled_error_text
+        self.expire_on_call = expire_on_call
         self.payments: set[tuple[str, str]] = set()
         self.order = OrderRecord(
             order_id=1,
@@ -68,6 +70,33 @@ class FakePaymentRepository:
                 self.item("I002"),
             ],
         )
+
+    def expire_unpaid_orders(self, visitor_id: int, expired_before: datetime) -> int:
+        if (
+            self.expire_on_call
+            and self.order.visitor_id == visitor_id
+            and self.order.order_status == "CREATED"
+            and self.order.payment_status == "UNPAID"
+            and self.order.order_time <= expired_before
+        ):
+            self.order = OrderRecord(
+                order_id=self.order.order_id,
+                order_no=self.order.order_no,
+                visitor_id=self.order.visitor_id,
+                buyer_name=self.order.buyer_name,
+                buyer_phone=self.order.buyer_phone,
+                order_status="CANCELLED",
+                payment_status=self.order.payment_status,
+                total_amount=self.order.total_amount,
+                payable_amount=self.order.payable_amount,
+                order_time=self.order.order_time,
+                items=[
+                    self.item(item.item_no, status="CANCELLED" if item.item_status == "PENDING_PAYMENT" else item.item_status)
+                    for item in self.order.items
+                ],
+            )
+            return 1
+        return 0
 
     def item(self, item_no: str, status: str = "PENDING_PAYMENT", ticket_code: str | None = None) -> OrderCreateItemRecord:
         return OrderCreateItemRecord(
@@ -320,6 +349,23 @@ def test_cancelled_order_payment_returns_not_payable_without_inventory_change():
     assert response.json()["code"] == "ORDER_NOT_PAYABLE"
     assert order_repo.quota_sold == 0
     assert order_repo.order.order_status == "CANCELLED"
+    assert order_repo.order.items[0].ticket_code is None
+
+
+def test_expired_unpaid_order_payment_returns_not_payable_and_cancels_items():
+    order_repo = FakePaymentRepository(visitor_id=1, expire_on_call=True)
+    client = build_client(FakeAuthRepository(registered_visitor()), order_repo)
+
+    response = client.post(
+        "/api/orders/O202607010900000001/pay",
+        headers=csrf_headers(client) | {"Idempotency-Key": "pay-expired"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "ORDER_NOT_PAYABLE"
+    assert order_repo.quota_sold == 0
+    assert order_repo.order.order_status == "CANCELLED"
+    assert order_repo.order.items[0].item_status == "CANCELLED"
     assert order_repo.order.items[0].ticket_code is None
 
 

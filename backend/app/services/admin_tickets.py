@@ -1,5 +1,6 @@
 from fastapi import Depends, Request
 
+from app.core.admin_audit import get_admin_audit_context
 from app.core.errors import AppError
 from app.repositories.admin_tickets import AdminTicketRecord, AdminTicketsRepository, get_admin_tickets_repository
 from app.schemas.admin_tickets import AdminTicketDTO, AdminTicketSaveRequest
@@ -16,21 +17,24 @@ class AdminTicketsService:
         return [self.to_dto(ticket) for ticket in self.repository.list_tickets()]
 
     def create_ticket(self, payload: AdminTicketSaveRequest, request: Request) -> AdminTicketDTO:
-        self.admin_auth_service.require_super_admin(request)
-        return self.to_dto(self._save(None, payload))
+        session = self.admin_auth_service.require_super_admin(request)
+        return self.to_dto(self._save(None, payload, get_admin_audit_context(request, session.admin)))
 
     def update_ticket(self, ticket_id: int, payload: AdminTicketSaveRequest, request: Request) -> AdminTicketDTO:
-        self.admin_auth_service.require_super_admin(request)
+        session = self.admin_auth_service.require_super_admin(request)
         try:
-            return self.to_dto(self._save(ticket_id, payload))
+            return self.to_dto(self._save(ticket_id, payload, get_admin_audit_context(request, session.admin)))
         except LookupError as exc:
             raise AppError(404, "ADMIN_TICKET_NOT_FOUND", "票种不存在") from exc
 
     def delete_ticket(self, ticket_id: int, request: Request) -> None:
-        self.admin_auth_service.require_super_admin(request)
-        self.repository.delete_ticket(ticket_id)
+        session = self.admin_auth_service.require_super_admin(request)
+        try:
+            self.repository.delete_ticket(ticket_id, get_admin_audit_context(request, session.admin))
+        except LookupError as exc:
+            raise AppError(404, "ADMIN_TICKET_NOT_FOUND", "票种不存在") from exc
 
-    def _save(self, ticket_id: int | None, payload: AdminTicketSaveRequest) -> AdminTicketRecord:
+    def _save(self, ticket_id: int | None, payload: AdminTicketSaveRequest, audit) -> AdminTicketRecord:
         return self.repository.save_ticket(
             ticket_id,
             name=payload.name,
@@ -47,6 +51,7 @@ class AdminTicketsService:
                 (slot.slot_start_time, slot.slot_end_time, slot.quota)
                 for slot in (payload.slot_quotas or [])
             ),
+            audit=audit,
         )
 
     @staticmethod

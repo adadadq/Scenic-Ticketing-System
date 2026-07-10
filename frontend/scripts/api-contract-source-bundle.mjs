@@ -30,6 +30,7 @@ export async function loadApiContractSourceBundle() {
   const adminAppShell = await parseSource('app/AdminAppShell.tsx')
   const adminWorkbench = await parseSource('features/admin/AdminWorkbench.tsx')
   const adminOrdersPanel = await parseSource('features/admin/AdminOrdersPanel.tsx')
+  const adminAuditPanel = await parseSource('features/admin/AdminAuditPanel.tsx')
   const adminOrderDisplay = await parseSource('features/admin/adminOrderDisplay.tsx')
   const adminBatchCheckInPanel = await parseSource('features/admin/components/AdminBatchCheckInPanel.tsx')
   const adminBatchUndoCheckInPanel = await parseSource('features/admin/components/AdminBatchUndoCheckInPanel.tsx')
@@ -171,6 +172,7 @@ export async function loadApiContractSourceBundle() {
     adminAppShell,
     adminWorkbench,
     adminOrdersPanel,
+    adminAuditPanel,
     adminOrderDisplay,
     adminBatchCheckInPanel,
     adminBatchUndoCheckInPanel,

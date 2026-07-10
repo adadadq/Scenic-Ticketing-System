@@ -281,9 +281,11 @@ def test_postgres_mock_payment_callback_locks_order_items_and_uses_event_idempot
             if "FROM ticket_order\n" in sql:
                 return {
                     "order_id": 1,
+                    "visitor_id": 7,
                     "order_no": "O202607010900000001",
                     "order_status": "CREATED",
                     "payment_status": "UNPAID",
+                    "order_time": datetime.now(UTC),
                     "payable_amount": Decimal("256.00"),
                 }
             if "FROM payment_record" in sql:

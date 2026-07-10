@@ -78,6 +78,20 @@ class FakeAuthRepository(VisitorFakeAuthRepository):
                 revoked_at=datetime.now(UTC),
             )
 
+    def revoke_admin_sessions(self, admin_user_id: int) -> None:
+        for session_token_hash, session in list(self.admin_sessions.items()):
+            if (
+                session.admin.id == admin_user_id
+                and session.revoked_at is None
+            ):
+                self.admin_sessions[session_token_hash] = SessionAdminRecord(
+                    session_id=session.session_id,
+                    admin=session.admin,
+                    csrf_token_hash=session.csrf_token_hash,
+                    expires_at=session.expires_at,
+                    revoked_at=datetime.now(UTC),
+                )
+
     def update_session_csrf(self, session_token_hash: str, csrf_token_hash: str, now: datetime) -> None:
         super().update_session_csrf(session_token_hash, csrf_token_hash, now)
         session = self.admin_sessions.get(session_token_hash)
@@ -155,6 +169,7 @@ def test_admin_login_creates_admin_session_cookie_without_returning_sensitive_fi
     body = response.json()
     cookie = response.headers["set-cookie"]
     session_token = client.cookies.get("scenic_admin_session")
+    device_token = client.cookies.get("scenic_admin_device")
     assert response.status_code == 200
     assert body["data"] == {
         "adminUserId": 1,
@@ -167,10 +182,43 @@ def test_admin_login_creates_admin_session_cookie_without_returning_sensitive_fi
     assert "session" not in response_text
     assert "csrf" not in response_text
     assert "scenic_admin_session=" in cookie
+    assert "scenic_admin_device=" in cookie
     assert "HttpOnly" in cookie
     assert session_token
+    assert device_token
+    assert len(device_token) == 43
     assert session_token not in repo.admin_sessions
     assert hash_secret(session_token) in repo.admin_sessions
+
+
+def test_admin_device_cookie_is_stable_per_browser_and_differs_between_browsers():
+    repo = FakeAuthRepository()
+    seed_enabled_admin(repo)
+    first_client = build_client(repo)
+    second_client = build_client(repo)
+
+    first_login = first_client.post(
+        "/api/admin/auth/login",
+        json=admin_login_payload(),
+        headers=csrf_headers(first_client),
+    )
+    first_device_token = first_client.cookies.get("scenic_admin_device")
+    repeated_login = first_client.post(
+        "/api/admin/auth/login",
+        json=admin_login_payload(),
+        headers=csrf_headers(first_client),
+    )
+    second_login = second_client.post(
+        "/api/admin/auth/login",
+        json=admin_login_payload(),
+        headers=csrf_headers(second_client),
+    )
+
+    assert first_login.status_code == 200
+    assert repeated_login.status_code == 200
+    assert second_login.status_code == 200
+    assert first_client.cookies.get("scenic_admin_device") == first_device_token
+    assert second_client.cookies.get("scenic_admin_device") != first_device_token
 
 
 def test_admin_login_rejects_extra_client_control_fields():
@@ -434,6 +482,36 @@ def test_admin_can_update_own_username_and_password_with_current_password():
         headers=csrf_headers(client),
     )
     assert new_login.status_code == 200
+
+
+def test_admin_password_change_revokes_all_admin_sessions():
+    repo = FakeAuthRepository()
+    seed_enabled_admin(repo)
+    client_a = build_client(repo)
+    client_b = build_client(repo)
+    headers_a = csrf_headers(client_a)
+    headers_b = csrf_headers(client_b)
+    login_a = client_a.post("/api/admin/auth/login", json=admin_login_payload(), headers=headers_a)
+    login_b = client_b.post("/api/admin/auth/login", json=admin_login_payload(), headers=headers_b)
+
+    response = client_a.patch(
+        "/api/admin/auth/profile",
+        json={"username": "admin", "currentPassword": "AdminDemo!2026", "newPassword": "123456"},
+        headers=headers_a,
+    )
+    current_session = client_a.get("/api/admin/auth/me")
+    old_session = client_b.get("/api/admin/auth/me")
+
+    assert login_a.status_code == 200
+    assert login_b.status_code == 200
+    assert response.status_code == 200
+    set_cookie = response.headers.get_list("set-cookie")
+    assert current_session.status_code == 401
+    assert current_session.json()["code"] == "ADMIN_AUTH_REQUIRED"
+    assert old_session.status_code == 401
+    assert old_session.json()["code"] == "ADMIN_AUTH_REQUIRED"
+    assert any("scenic_admin_session=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie)
+    assert any("scenic_csrf=" in cookie and "Max-Age=0" in cookie for cookie in set_cookie)
 
 
 def test_admin_profile_update_rejects_wrong_current_password():

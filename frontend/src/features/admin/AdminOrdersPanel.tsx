@@ -391,7 +391,6 @@ function OrderDetailPanel({
             <div className="admin-order-detail-section">
               <strong>游客信息</strong>
               <DetailLine label={detail?.buyerName ?? fallback?.buyerName ?? '游客'} value={detail?.buyerPhoneMasked ?? fallback?.buyerPhoneMasked ?? '--'} />
-              <DetailLine label="身份证号" value="--" />
               <DetailLine label="下单备注" value="--" />
             </div>
 

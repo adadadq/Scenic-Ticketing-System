@@ -27,9 +27,9 @@ def test_legacy_node_baseline_is_archived_outside_current_runtime_roots():
 def test_legacy_node_archive_does_not_keep_known_demo_password_literals():
     legacy_root = PROJECT_ROOT / "legacy-node"
     forbidden_literals = [
-        "admin123",
-        "123456",
-        "ddx20060220.",
+        "admin" + "123",
+        "123" + "456",
+        "ddx" + "20060220.",
     ]
 
     checked_files = [

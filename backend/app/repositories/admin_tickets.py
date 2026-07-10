@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Protocol
 
+from app.core.admin_audit import AdminAuditContext
 from app.core.db import connect_db, transaction
 
 
@@ -54,10 +55,11 @@ class AdminTicketsRepository(Protocol):
         date_to: date | None,
         slot_quota: int,
         slot_quotas: tuple[tuple[str, str, int], ...],
+        audit: AdminAuditContext,
     ) -> AdminTicketRecord:
         ...
 
-    def delete_ticket(self, ticket_id: int) -> None:
+    def delete_ticket(self, ticket_id: int, audit: AdminAuditContext) -> None:
         ...
 
 
@@ -149,6 +151,7 @@ class PostgresAdminTicketsRepository:
         date_to: date | None,
         slot_quota: int,
         slot_quotas: tuple[tuple[str, str, int], ...],
+        audit: AdminAuditContext,
     ) -> AdminTicketRecord:
         db_status = "ENABLED" if status == "ON_SALE" else "DISABLED"
         next_slot_quotas = slot_quotas or _default_slot_quotas(slot_quota)
@@ -186,21 +189,28 @@ class PostgresAdminTicketsRepository:
                     ).fetchone()
                     saved_id = row["id"]
 
-                connection.execute(
+                cursor = connection.execute(
                     """
-                    INSERT INTO route_product (
-                        scenic_spot_id, ticket_type_id, product_name, raft_capacity, trip_type,
-                        start_pier_id, end_pier_id, window_phone, sale_price, status
-                    )
-                    VALUES (1, %s, %s, 2, 'ONE_WAY', 1, 2, '0773-1234567', %s, %s)
-                    ON CONFLICT (ticket_type_id)
-                    DO UPDATE SET product_name = EXCLUDED.product_name,
-                                  sale_price = EXCLUDED.sale_price,
-                                  status = EXCLUDED.status,
-                                  updated_at = CURRENT_TIMESTAMP
+                    UPDATE route_product
+                    SET product_name = %s,
+                        sale_price = %s,
+                        status = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE ticket_type_id = %s
                     """,
-                    (saved_id, route, sale_price, db_status),
+                    (route, sale_price, db_status, saved_id),
                 )
+                if cursor.rowcount == 0:
+                    connection.execute(
+                        """
+                        INSERT INTO route_product (
+                            scenic_spot_id, ticket_type_id, product_name, raft_capacity, trip_type,
+                            start_pier_id, end_pier_id, window_phone, sale_price, status
+                        )
+                        VALUES (1, %s, %s, 2, 'ONE_WAY', 1, 2, '0773-1234567', %s, %s)
+                        """,
+                        (saved_id, route, sale_price, db_status),
+                    )
 
                 if date_from and date_to:
                     connection.execute(
@@ -214,35 +224,27 @@ class PostgresAdminTicketsRepository:
                     )
                     for visit_date in _dates_between(date_from, date_to):
                         for slot_start, slot_end, quota in next_slot_quotas:
-                            connection.execute(
-                                """
-                                INSERT INTO time_slot_quota (
-                                    ticket_type_id, visit_date, slot_start_time, slot_end_time, quota_total, status
-                                )
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                                ON CONFLICT (ticket_type_id, visit_date, slot_start_time, slot_end_time)
-                                DO UPDATE SET quota_total = GREATEST(EXCLUDED.quota_total, time_slot_quota.quota_sold),
-                                              status = EXCLUDED.status,
-                                              updated_at = CURRENT_TIMESTAMP
-                                """,
-                                (saved_id, visit_date, slot_start, slot_end, quota, db_status),
+                            _upsert_time_slot_quota(
+                                connection,
+                                ticket_type_id=saved_id,
+                                visit_date=visit_date,
+                                slot_start=slot_start,
+                                slot_end=slot_end,
+                                quota=quota,
+                                status=db_status,
                             )
                 elif stock:
                     today = date.today()
                     per_slot = max(1, stock // len(next_slot_quotas))
                     for slot_start, slot_end, quota in next_slot_quotas:
-                        connection.execute(
-                            """
-                            INSERT INTO time_slot_quota (
-                                ticket_type_id, visit_date, slot_start_time, slot_end_time, quota_total, status
-                            )
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (ticket_type_id, visit_date, slot_start_time, slot_end_time)
-                            DO UPDATE SET quota_total = GREATEST(EXCLUDED.quota_total, time_slot_quota.quota_sold),
-                                          status = EXCLUDED.status,
-                                          updated_at = CURRENT_TIMESTAMP
-                            """,
-                            (saved_id, today, slot_start, slot_end, quota if slot_quotas else per_slot, db_status),
+                        _upsert_time_slot_quota(
+                            connection,
+                            ticket_type_id=saved_id,
+                            visit_date=today,
+                            slot_start=slot_start,
+                            slot_end=slot_end,
+                            quota=quota if slot_quotas else per_slot,
+                            status=db_status,
                         )
 
                 row = connection.execute(
@@ -281,17 +283,106 @@ class PostgresAdminTicketsRepository:
                     """,
                     (saved_id,),
                 ).fetchall()
+                self._insert_audit_log(
+                    connection,
+                    ticket_id=saved_id,
+                    ticket_name=name,
+                    action="UPDATE" if ticket_id else "CREATE",
+                    audit=audit,
+                )
         return _record(
             row,
             tuple((slot["slot_start_time"], slot["slot_end_time"], slot["quota"]) for slot in slot_rows),
         )
 
-    def delete_ticket(self, ticket_id: int) -> None:
+    def delete_ticket(self, ticket_id: int, audit: AdminAuditContext) -> None:
         with connect_db() as connection:
             with transaction(connection):
+                row = connection.execute(
+                    "SELECT ticket_name FROM ticket_type WHERE id = %s",
+                    (ticket_id,),
+                ).fetchone()
+                if not row:
+                    raise LookupError("ticket not found")
                 connection.execute("UPDATE time_slot_quota SET status = 'DISABLED', updated_at = CURRENT_TIMESTAMP WHERE ticket_type_id = %s", (ticket_id,))
                 connection.execute("UPDATE route_product SET status = 'DISABLED', updated_at = CURRENT_TIMESTAMP WHERE ticket_type_id = %s", (ticket_id,))
                 connection.execute("UPDATE ticket_type SET status = 'DISABLED', updated_at = CURRENT_TIMESTAMP WHERE id = %s", (ticket_id,))
+                self._insert_audit_log(
+                    connection,
+                    ticket_id=ticket_id,
+                    ticket_name=row["ticket_name"],
+                    action="DELETE",
+                    audit=audit,
+                )
+
+    @staticmethod
+    def _insert_audit_log(connection, *, ticket_id: int, ticket_name: str, action: str, audit: AdminAuditContext) -> None:
+        connection.execute(
+            """
+            INSERT INTO admin_ticket_audit_log (
+                ticket_type_id,
+                ticket_name,
+                action,
+                operator_admin_user_id,
+                operator_username,
+                operator_display_name,
+                request_id,
+                source_ip,
+                device_id,
+                admin_session_id,
+                user_agent
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                ticket_id,
+                ticket_name,
+                action,
+                audit.admin_user_id,
+                audit.operator_username,
+                audit.operator_display_name,
+                audit.request_id,
+                audit.source_ip,
+                audit.device_id,
+                audit.admin_session_id,
+                audit.user_agent,
+            ),
+        )
+
+
+def _upsert_time_slot_quota(
+    connection,
+    *,
+    ticket_type_id: int,
+    visit_date: date,
+    slot_start: str,
+    slot_end: str,
+    quota: int,
+    status: str,
+) -> None:
+    cursor = connection.execute(
+        """
+        UPDATE time_slot_quota
+        SET quota_total = GREATEST(%s, quota_sold),
+            status = %s,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE ticket_type_id = %s
+          AND visit_date = %s
+          AND slot_start_time = %s
+          AND slot_end_time = %s
+        """,
+        (quota, status, ticket_type_id, visit_date, slot_start, slot_end),
+    )
+    if cursor.rowcount == 0:
+        connection.execute(
+            """
+            INSERT INTO time_slot_quota (
+                ticket_type_id, visit_date, slot_start_time, slot_end_time, quota_total, status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (ticket_type_id, visit_date, slot_start, slot_end, quota, status),
+        )
 
 
 def get_admin_tickets_repository() -> AdminTicketsRepository:

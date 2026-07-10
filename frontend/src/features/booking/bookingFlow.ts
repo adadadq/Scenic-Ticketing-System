@@ -357,7 +357,6 @@ export function buildOrderCreateRequest({
             idType: draft.idType.trim(),
             idNumber: draft.idNumber.trim(),
             phone: draft.phone.trim(),
-            templateId: draft.templateId,
           }
         }),
       }

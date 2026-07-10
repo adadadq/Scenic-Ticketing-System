@@ -12,7 +12,7 @@ import {
 
 export type AdminReportsMode = 'mock' | 'api'
 
-export const adminReportsMode: AdminReportsMode = import.meta.env.VITE_ADMIN_REPORTS_MODE === 'api' ? 'api' : 'mock'
+export const adminReportsMode: AdminReportsMode = import.meta.env.VITE_ADMIN_REPORTS_MODE === 'mock' ? 'mock' : 'api'
 
 export const adminReportQueryKeys = {
   dailyTrend: (params: AdminTrendReportParams = {}, mode: AdminReportsMode = adminReportsMode) =>

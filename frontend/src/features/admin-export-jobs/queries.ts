@@ -14,7 +14,7 @@ import {
 export type AdminExportJobsMode = 'mock' | 'api'
 
 export const adminExportJobsMode: AdminExportJobsMode =
-  import.meta.env.VITE_ADMIN_EXPORT_JOBS_MODE === 'api' ? 'api' : 'mock'
+  import.meta.env.VITE_ADMIN_EXPORT_JOBS_MODE === 'mock' ? 'mock' : 'api'
 
 export const adminExportJobQueryKeys = {
   detail: (jobId: string, mode: AdminExportJobsMode = adminExportJobsMode) =>

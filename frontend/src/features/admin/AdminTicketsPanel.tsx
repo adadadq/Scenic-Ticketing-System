@@ -8,9 +8,10 @@ import {
   SunOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Button, Form, Input, InputNumber, Popconfirm, Radio, Select, Tag, Typography } from 'antd'
+import { Alert, Button, Empty, Form, Input, InputNumber, Popconfirm, Radio, Select, Tag, Typography, message } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { adminTicketsApi } from '../../shared/api/endpoints'
+import { formatApiError } from '../../shared/api/errors'
 import type { AdminTicket, AdminTicketSaveRequest, AdminTicketSlotQuota, AdminTicketStatus } from '../../shared/api/types'
 import { AdminNoticeButton } from './components/AdminNoticeButton'
 
@@ -34,6 +35,7 @@ const typeOptions = ['竹筏漂流票', '景区优惠票']
 const routeOptions = ['遇龙河竹筏漂流（精华段）', '金龙桥至旧县成人票', '遇龙河经典竹筏漂流线路']
 const scenicImage = '/admin-login-landscape.png'
 type TicketStatus = AdminTicketStatus
+type TicketEditorMode = 'idle' | 'create' | 'edit'
 const defaultSlotQuotas: AdminTicketSlotQuota[] = [
   { slotStartTime: '08:30', slotEndTime: '10:30', quota: 40 },
   { slotStartTime: '10:30', slotEndTime: '12:30', quota: 40 },
@@ -146,41 +148,59 @@ function tagsFor(ticket: AdminTicket) {
 
 export function AdminTicketsPanel() {
   const [form] = Form.useForm<TicketFormValues>()
+  const [messageApi, messageContext] = message.useMessage()
   const queryClient = useQueryClient()
   const ticketsQuery = useQuery({ queryKey: ['admin-tickets'], queryFn: adminTicketsApi.list })
   const saveTicketMutation = useMutation({
-    mutationFn: ({ id, values }: { id?: number; values: AdminTicketSaveRequest }) =>
+    mutationFn: ({ id, values }: { action: 'save' | 'toggle'; id?: number; values: AdminTicketSaveRequest }) =>
       id ? adminTicketsApi.update(id, values) : adminTicketsApi.create(values),
-    onSuccess: (ticket) => {
+    onSuccess: (ticket, variables) => {
       setEditingTicket(ticket)
+      setEditorMode('edit')
+      messageApi.success(variables.action === 'toggle' ? '票种状态已更新' : '票种保存成功')
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] })
       queryClient.invalidateQueries({ queryKey: ['booking'] })
+    },
+    onError: (error, variables) => {
+      const fallback = variables.action === 'toggle'
+        ? '票种状态更新失败，请确认管理员登录状态后重试。'
+        : '票种保存失败，请确认管理员登录状态后重试。'
+      messageApi.error(formatApiError(error, fallback))
     },
   })
   const deleteTicketMutation = useMutation({
     mutationFn: adminTicketsApi.delete,
     onSuccess: () => {
       setEditingTicket(null)
+      setEditorMode('idle')
+      messageApi.success('票种已删除')
       queryClient.invalidateQueries({ queryKey: ['admin-tickets'] })
       queryClient.invalidateQueries({ queryKey: ['booking'] })
     },
+    onError: (error) => {
+      messageApi.error(formatApiError(error, '票种删除失败，请稍后重试。'))
+    },
   })
   const tickets = ticketsQuery.isSuccess ? ticketsQuery.data : seedTickets
-  const [editingTicket, setEditingTicket] = useState<AdminTicket | null>(seedTickets[0])
+  const [editingTicket, setEditingTicket] = useState<AdminTicket | null>(null)
+  const [editorMode, setEditorMode] = useState<TicketEditorMode>('idle')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL'>('ALL')
 
   useEffect(() => {
-    if (ticketsQuery.data?.length && (!editingTicket || !ticketsQuery.data.some((ticket) => ticket.id === editingTicket.id))) {
-      setEditingTicket(ticketsQuery.data[0])
+    if (editorMode === 'edit' && editingTicket && ticketsQuery.data?.length && !ticketsQuery.data.some((ticket) => ticket.id === editingTicket.id)) {
+      setEditingTicket(null)
+      setEditorMode('idle')
     }
-  }, [editingTicket, ticketsQuery.data])
+  }, [editingTicket, editorMode, ticketsQuery.data])
 
   useEffect(() => {
-    if (editingTicket) {
+    if (editorMode === 'edit' && editingTicket) {
       form.setFieldsValue(toFormValues(editingTicket))
       return
     }
+
+    if (editorMode !== 'create') return
 
     form.setFieldsValue({
       description: '',
@@ -195,7 +215,7 @@ export function AdminTicketsPanel() {
       stock: 5000,
       type: typeOptions[0],
     })
-  }, [editingTicket, form])
+  }, [editingTicket, editorMode, form])
 
   const filteredTickets = useMemo(() => {
     const keyword = query.trim()
@@ -205,14 +225,26 @@ export function AdminTicketsPanel() {
     )
   }, [query, statusFilter, tickets])
 
-  function openEditor(ticket?: AdminTicket) {
-    setEditingTicket(ticket ?? null)
+  function openCreateEditor() {
+    setEditingTicket(null)
+    setEditorMode('create')
+  }
+
+  function openEditEditor(ticket: AdminTicket) {
+    setEditingTicket(ticket)
+    setEditorMode('edit')
+  }
+
+  function closeEditor() {
+    setEditingTicket(null)
+    setEditorMode('idle')
   }
 
   function saveTicket(values: TicketFormValues) {
     const slotQuotas = slotQuotasFrom(values.slotQuota, values.slotQuotas)
     saveTicketMutation.mutate({
-      id: editingTicket?.id,
+      action: 'save',
+      id: editorMode === 'edit' ? editingTicket?.id : undefined,
       values: {
         ...values,
         dateFrom: values.dateFrom,
@@ -226,6 +258,7 @@ export function AdminTicketsPanel() {
 
   function toggleStatus(ticket: AdminTicket) {
     saveTicketMutation.mutate({
+      action: 'toggle',
       id: ticket.id,
       values: {
         dateFrom: ticket.dateFrom ?? today(),
@@ -249,6 +282,7 @@ export function AdminTicketsPanel() {
 
   return (
     <section className="admin-ticket-page">
+      {messageContext}
       <div className="admin-ticket-hero">
         <div className="admin-ticket-hero-copy">
           <Title level={1}>票种管理</Title>
@@ -297,7 +331,7 @@ export function AdminTicketsPanel() {
               ]}
               onChange={setStatusFilter}
             />
-            <Button className="admin-ticket-create-action" icon={<PlusOutlined />} type="primary" onClick={() => openEditor()}>
+            <Button className="admin-ticket-create-action" icon={<PlusOutlined />} type="primary" onClick={openCreateEditor}>
               新增票种
             </Button>
           </div>
@@ -332,7 +366,7 @@ export function AdminTicketsPanel() {
                 </div>
                 <div><Text>{ticket.allocatedQuota}</Text><Text type="secondary">张</Text></div>
                 <div className="admin-ticket-actions">
-                  <Button icon={<EditOutlined />} onClick={() => openEditor(ticket)}>编辑</Button>
+                  <Button icon={<EditOutlined />} onClick={() => openEditEditor(ticket)}>编辑</Button>
                   <Button className={ticket.status === 'ON_SALE' ? 'is-off-action' : 'is-on-action'} onClick={() => toggleStatus(ticket)}>
                     {ticket.status === 'ON_SALE' ? '下架' : '上架'}
                   </Button>
@@ -359,70 +393,89 @@ export function AdminTicketsPanel() {
         </div>
 
         <aside className="admin-ticket-editor">
-          <div className="admin-ticket-editor-head">
-            <Title level={2}>{editingTicket ? '编辑票种' : '新增票种'}</Title>
-            <Button icon={<CloseOutlined />} type="text" onClick={() => setEditingTicket(tickets[0] ?? null)} />
-          </div>
-          <Form form={form} layout="vertical" requiredMark onFinish={saveTicket}>
-            <Form.Item label="票种名称" name="name" rules={[{ required: true, message: '请输入票种名称' }]}>
-              <Input maxLength={20} showCount placeholder="成人票" />
-            </Form.Item>
-            <Form.Item label="票种类型" name="type" rules={[{ required: true, message: '请选择票种类型' }]}>
-              <Select options={typeOptions.map((type) => ({ label: type, value: type }))} />
-            </Form.Item>
-            <Form.Item label="价格（元）" name="salePrice" rules={[{ required: true, type: 'number', min: 0.01, message: '价格必须大于 0' }]}>
-              <InputNumber min={0.01} precision={2} />
-            </Form.Item>
-            <Form.Item label="库存（张）" name="stock" rules={[{ required: true, type: 'number', min: 0, message: '请输入库存' }]}>
-              <InputNumber min={0} precision={0} />
-            </Form.Item>
-            <Form.Item label="可售开始日期" name="dateFrom" rules={[{ required: true, message: '请选择开始日期' }]}>
-              <Input type="date" />
-            </Form.Item>
-            <Form.Item label="可售结束日期" name="dateTo" rules={[{ required: true, message: '请选择结束日期' }]}>
-              <Input type="date" />
-            </Form.Item>
-            <Form.Item hidden name="slotQuota">
-              <InputNumber min={0} precision={0} />
-            </Form.Item>
-            <Form.Item label="时段库存调度" required>
-              <div className="admin-ticket-slot-editor">
-                {defaultSlotQuotas.map((slot, index) => (
-                  <div className="admin-ticket-slot-quota" key={`${slot.slotStartTime}-${slot.slotEndTime}`}>
-                    <span>{slot.slotStartTime}-{slot.slotEndTime}</span>
-                    <Form.Item hidden name={['slotQuotas', index, 'slotStartTime']} initialValue={slot.slotStartTime}>
-                      <Input />
-                    </Form.Item>
-                    <Form.Item hidden name={['slotQuotas', index, 'slotEndTime']} initialValue={slot.slotEndTime}>
-                      <Input />
-                    </Form.Item>
-                    <Form.Item
-                      name={['slotQuotas', index, 'quota']}
-                      rules={[{ required: true, type: 'number', min: 0, message: '请输入库存' }]}
-                    >
-                      <InputNumber min={0} precision={0} addonAfter="张" />
-                    </Form.Item>
-                  </div>
-                ))}
-              </div>
-            </Form.Item>
-            <Form.Item label="票种描述" name="description">
-              <Input.TextArea maxLength={200} rows={4} showCount />
-            </Form.Item>
-            <Form.Item label="适用路线" name="route" rules={[{ required: true, message: '请选择适用路线' }]}>
-              <Select options={routeOptions.map((route) => ({ label: route, value: route }))} />
-            </Form.Item>
-            <Form.Item label="状态" name="status" rules={[{ required: true, message: '请选择状态' }]}>
-              <Radio.Group>
-                <Radio value="ON_SALE">上架中</Radio>
-                <Radio value="OFF_SALE">已下架</Radio>
-              </Radio.Group>
-            </Form.Item>
-            <div className="admin-ticket-editor-footer">
-              <Button onClick={() => setEditingTicket(tickets[0] ?? null)}>取消</Button>
-              <Button type="primary" htmlType="submit" loading={saveTicketMutation.isPending}>保存修改</Button>
+          {editorMode === 'idle' ? (
+            <div className="admin-ticket-editor-empty">
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span>
+                    请选择票种后点击编辑
+                    <br />
+                    或新增一个票种
+                  </span>
+                }
+              />
             </div>
-          </Form>
+          ) : (
+            <>
+              <div className="admin-ticket-editor-head">
+                <Title level={2}>{editorMode === 'edit' ? '编辑票种' : '新增票种'}</Title>
+                <Button icon={<CloseOutlined />} type="text" onClick={closeEditor} />
+              </div>
+              <Form form={form} layout="vertical" requiredMark onFinish={saveTicket}>
+                <Form.Item label="票种名称" name="name" rules={[{ required: true, message: '请输入票种名称' }]}>
+                  <Input maxLength={20} showCount placeholder="成人票" />
+                </Form.Item>
+                <Form.Item label="票种类型" name="type" rules={[{ required: true, message: '请选择票种类型' }]}>
+                  <Select options={typeOptions.map((type) => ({ label: type, value: type }))} />
+                </Form.Item>
+                <Form.Item label="价格（元）" name="salePrice" rules={[{ required: true, type: 'number', min: 0.01, message: '价格必须大于 0' }]}>
+                  <InputNumber min={0.01} precision={2} />
+                </Form.Item>
+                <Form.Item label="库存（张）" name="stock" rules={[{ required: true, type: 'number', min: 0, message: '请输入库存' }]}>
+                  <InputNumber min={0} precision={0} />
+                </Form.Item>
+                <Form.Item label="可售开始日期" name="dateFrom" rules={[{ required: true, message: '请选择开始日期' }]}>
+                  <Input type="date" />
+                </Form.Item>
+                <Form.Item label="可售结束日期" name="dateTo" rules={[{ required: true, message: '请选择结束日期' }]}>
+                  <Input type="date" />
+                </Form.Item>
+                <Form.Item hidden name="slotQuota">
+                  <InputNumber min={0} precision={0} />
+                </Form.Item>
+                <Form.Item label="时段库存调度" required>
+                  <div className="admin-ticket-slot-editor">
+                    {defaultSlotQuotas.map((slot, index) => (
+                      <div className="admin-ticket-slot-quota" key={`${slot.slotStartTime}-${slot.slotEndTime}`}>
+                        <span>{slot.slotStartTime}-{slot.slotEndTime}</span>
+                        <Form.Item hidden name={['slotQuotas', index, 'slotStartTime']} initialValue={slot.slotStartTime}>
+                          <Input />
+                        </Form.Item>
+                        <Form.Item hidden name={['slotQuotas', index, 'slotEndTime']} initialValue={slot.slotEndTime}>
+                          <Input />
+                        </Form.Item>
+                        <Form.Item
+                          name={['slotQuotas', index, 'quota']}
+                          rules={[{ required: true, type: 'number', min: 0, message: '请输入库存' }]}
+                        >
+                          <InputNumber min={0} precision={0} addonAfter="张" />
+                        </Form.Item>
+                      </div>
+                    ))}
+                  </div>
+                </Form.Item>
+                <Form.Item label="票种描述" name="description">
+                  <Input.TextArea maxLength={200} rows={4} showCount />
+                </Form.Item>
+                <Form.Item label="适用路线" name="route" rules={[{ required: true, message: '请选择适用路线' }]}>
+                  <Select options={routeOptions.map((route) => ({ label: route, value: route }))} />
+                </Form.Item>
+                <Form.Item label="状态" name="status" rules={[{ required: true, message: '请选择状态' }]}>
+                  <Radio.Group>
+                    <Radio value="ON_SALE">上架中</Radio>
+                    <Radio value="OFF_SALE">已下架</Radio>
+                  </Radio.Group>
+                </Form.Item>
+                <div className="admin-ticket-editor-footer">
+                  <Button onClick={closeEditor}>取消</Button>
+                  <Button type="primary" htmlType="submit" loading={saveTicketMutation.isPending}>
+                    {editorMode === 'edit' ? '保存修改' : '保存票种'}
+                  </Button>
+                </div>
+              </Form>
+            </>
+          )}
         </aside>
       </div>
     </section>

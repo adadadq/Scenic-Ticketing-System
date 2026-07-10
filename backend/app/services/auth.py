@@ -8,11 +8,13 @@ from threading import Lock
 
 from fastapi import Depends, Request, Response
 
+from app.core.client_ip import get_client_ip
 from app.core.config import SecuritySettings, get_settings
 from app.core.errors import AppError
 from app.core.security import (
     clear_csrf_cookie,
     clear_session_cookie,
+    ensure_admin_device_cookie,
     generate_token,
     get_csrf_cookie,
     get_csrf_header,
@@ -122,7 +124,7 @@ class AuthService:
         self.login_rate_limiter = login_rate_limiter
 
     def login_visitor(self, payload: VisitorLoginRequest, request: Request, response: Response) -> VisitorMeDTO:
-        client_host = request.client.host if request.client else "unknown"
+        client_host = get_client_ip(request) or "unknown"
         if not self.login_rate_limiter.allow(client_host, payload.username):
             raise AppError(429, "RATE_LIMITED", "请求过于频繁，请稍后再试")
 
@@ -245,7 +247,7 @@ class AdminAuthService:
         self.login_rate_limiter = login_rate_limiter
 
     def login_admin(self, payload: AdminLoginRequest, request: Request, response: Response) -> AdminMeDTO:
-        client_host = request.client.host if request.client else "unknown"
+        client_host = get_client_ip(request) or "unknown"
         if not self.login_rate_limiter.allow(client_host, payload.username):
             raise AppError(429, "RATE_LIMITED", "请求过于频繁，请稍后再试")
 
@@ -266,20 +268,29 @@ class AdminAuthService:
             expires_at=session_expires_at(),
         )
         set_session_cookie(response, session_token, cookie_name=get_settings().security.admin_session_cookie_name)
+        ensure_admin_device_cookie(request, response)
         return self.to_admin_dto(admin)
 
     def current_admin(self, request: Request) -> AdminMeDTO:
-        session_record = self.current_session_admin(request)
+        session_record = self.current_session_admin(request, forbid_visitor_session=False)
         self.repository.touch_session(session_record.session_id)
         return self.to_admin_dto(session_record.admin)
 
-    def current_session_admin(self, request: Request):
-        session_token = request.cookies.get(get_settings().security.admin_session_cookie_name, "")
+    def current_session_admin(self, request: Request, *, forbid_visitor_session: bool = True):
+        settings = get_settings().security
+        now = datetime.now(UTC)
+        session_token = request.cookies.get(settings.admin_session_cookie_name, "")
         if not session_token:
+            visitor_session_token = request.cookies.get(settings.session_cookie_name, "")
+            if (
+                forbid_visitor_session
+                and visitor_session_token
+                and self.repository.find_session_visitor(hash_secret(visitor_session_token), now) is not None
+            ):
+                raise AppError(403, "ADMIN_FORBIDDEN", "当前账号无后台权限")
             raise AppError(401, "ADMIN_AUTH_REQUIRED", "请先登录管理员账号")
 
         session_token_hash = hash_secret(session_token)
-        now = datetime.now(UTC)
         session_record = self.repository.find_session_admin(session_token_hash, now)
         if session_record is None:
             visitor_session = self.repository.find_session_visitor(session_token_hash, now)
@@ -291,6 +302,7 @@ class AdminAuthService:
             raise AppError(401, "ADMIN_AUTH_REQUIRED", "请先登录管理员账号")
         if request.method.upper() in MUTATING_METHODS:
             AuthService.require_session_bound_csrf(request, session_record.csrf_token_hash)
+        request.state.admin_session_id = session_record.session_id
         return session_record
 
     def require_super_admin(self, request: Request):
@@ -299,8 +311,8 @@ class AdminAuthService:
             raise AppError(403, "ADMIN_FORBIDDEN", "当前账号无后台权限")
         return session_record
 
-    def update_profile(self, payload: AdminProfileUpdateRequest, request: Request) -> AdminMeDTO:
-        session_record = self.current_session_admin(request)
+    def update_profile(self, payload: AdminProfileUpdateRequest, request: Request, response: Response) -> AdminMeDTO:
+        session_record = self.current_session_admin(request, forbid_visitor_session=False)
         admin = session_record.admin
         if not verify_password(payload.current_password, admin.password_hash):
             raise AppError(401, "ADMIN_PASSWORD_INVALID", "当前密码错误")
@@ -310,10 +322,14 @@ class AdminAuthService:
             next_admin = self.repository.update_admin_profile(admin.id, payload.username, password_hash)
         except AdminConflictError as exc:
             raise AppError(409, "ADMIN_USERNAME_CONFLICT", "管理员账号已被使用") from exc
+        if payload.new_password:
+            self.repository.revoke_admin_sessions(admin.id)
+            clear_session_cookie(response, cookie_name=get_settings().security.admin_session_cookie_name)
+            clear_csrf_cookie(response)
         return self.to_admin_dto(next_admin)
 
     def logout_admin(self, request: Request, response: Response) -> None:
-        session_record = self.current_session_admin(request)
+        session_record = self.current_session_admin(request, forbid_visitor_session=False)
         self.repository.revoke_session(hash_secret(request.cookies.get(get_settings().security.admin_session_cookie_name, "")))
         clear_session_cookie(response, cookie_name=get_settings().security.admin_session_cookie_name)
         clear_csrf_cookie(response)

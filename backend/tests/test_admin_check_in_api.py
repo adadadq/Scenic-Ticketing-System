@@ -2208,7 +2208,18 @@ def test_postgres_check_in_locks_ticket_and_order_and_uses_parameterized_ticket_
     assert "UPDATE ticket_order" in calls[5][0]
     assert "INSERT INTO check_in_audit_log" in calls[6][0]
     assert calls[6][1][0:6] == (1, 10, "O-PAID", "I-UNUSED", "TK-UNUSED", "CHECK_IN")
-    assert calls[6][1][6:] == (1, "demo_admin", "演示管理员", "req-test", None, result.checked_in_at)
+    assert calls[6][1][6:] == (
+        1,
+        "demo_admin",
+        "演示管理员",
+        "req-test",
+        None,
+        None,
+        None,
+        None,
+        None,
+        result.checked_in_at,
+    )
 
 
 def test_postgres_check_in_allows_remaining_ticket_after_partial_refund_and_ignores_refunded_items(monkeypatch):
@@ -2318,7 +2329,18 @@ def test_postgres_undo_check_in_locks_ticket_decrements_quota_reverts_completed_
     assert "RETURNING id" in calls[3][0]
     assert "INSERT INTO check_in_audit_log" in calls[4][0]
     assert calls[4][1][0:6] == (1, 10, "O-PAID", "I-USED", "TK-USED", "UNDO_CHECK_IN")
-    assert calls[4][1][6:] == (1, "demo_admin", "演示管理员", "req-test", "现场误核销", result.undone_at)
+    assert calls[4][1][6:] == (
+        1,
+        "demo_admin",
+        "演示管理员",
+        "req-test",
+        "现场误核销",
+        None,
+        None,
+        None,
+        None,
+        result.undone_at,
+    )
 
 
 def test_postgres_undo_check_in_rejects_unchecked_ticket_before_updates(monkeypatch):
@@ -2851,7 +2873,7 @@ def test_postgres_records_check_in_failure_audit_log_with_parameterized_values(m
     assert len(calls) == 1
     sql, params = calls[0]
     assert "INSERT INTO check_in_failure_audit_log" in sql
-    assert "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)" in sql
+    assert "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" in sql
     assert "TK-MISSING" not in sql
     assert "UNDO_CHECK_IN" not in sql
     assert "TICKET_NOT_FOUND" not in sql
@@ -2865,7 +2887,8 @@ def test_postgres_records_check_in_failure_audit_log_with_parameterized_values(m
         "演示管理员",
         "req-test",
     )
-    assert isinstance(params[8], datetime)
+    assert params[8:12] == (None, None, None, None)
+    assert isinstance(params[12], datetime)
 
 
 def test_postgres_list_check_in_failure_audit_log_entries_filters_and_paginates(monkeypatch):

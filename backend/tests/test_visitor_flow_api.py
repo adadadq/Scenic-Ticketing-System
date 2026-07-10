@@ -254,6 +254,9 @@ class FlowOrderRepository:
             quota_remaining=5 - self.quota_sold,
         )
 
+    def expire_unpaid_orders(self, _visitor_id: int, _expired_before: datetime) -> int:
+        return 0
+
     def create_pending_order(
         self,
         order_no: str,

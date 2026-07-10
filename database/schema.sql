@@ -239,6 +239,10 @@ CREATE TABLE refund_audit_log (
     operator_username VARCHAR(64) NOT NULL,
     operator_display_name VARCHAR(100) NOT NULL,
     request_id VARCHAR(64),
+    source_ip VARCHAR(64),
+    device_id VARCHAR(32),
+    admin_session_id BIGINT,
+    user_agent VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_refund_audit_log_type CHECK (refund_type IN ('FULL', 'PARTIAL'))
 );
@@ -255,6 +259,10 @@ CREATE TABLE check_in_audit_log (
     operator_username VARCHAR(64) NOT NULL,
     operator_display_name VARCHAR(100) NOT NULL,
     request_id VARCHAR(64),
+    source_ip VARCHAR(64),
+    device_id VARCHAR(32),
+    admin_session_id BIGINT,
+    user_agent VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_check_in_audit_log_order_item FOREIGN KEY (order_id, order_item_id)
         REFERENCES ticket_order_item(order_id, id),
@@ -271,6 +279,10 @@ CREATE TABLE check_in_failure_audit_log (
     operator_username VARCHAR(64) NOT NULL,
     operator_display_name VARCHAR(100) NOT NULL,
     request_id VARCHAR(64),
+    source_ip VARCHAR(64),
+    device_id VARCHAR(32),
+    admin_session_id BIGINT,
+    user_agent VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_check_in_failure_audit_log_action CHECK (action IN ('CHECK_IN', 'UNDO_CHECK_IN')),
     CONSTRAINT ck_check_in_failure_audit_log_code CHECK (
@@ -366,7 +378,27 @@ CREATE TABLE admin_system_setting_audit_log (
     operator_display_name VARCHAR(100) NOT NULL,
     request_id VARCHAR(64),
     source_ip VARCHAR(64),
+    device_id VARCHAR(32),
+    admin_session_id BIGINT,
+    user_agent VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE admin_ticket_audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    ticket_type_id BIGINT NOT NULL,
+    ticket_name VARCHAR(100) NOT NULL,
+    action VARCHAR(20) NOT NULL,
+    operator_admin_user_id BIGINT NOT NULL REFERENCES admin_user(id),
+    operator_username VARCHAR(64) NOT NULL,
+    operator_display_name VARCHAR(100) NOT NULL,
+    request_id VARCHAR(64),
+    source_ip VARCHAR(64),
+    device_id VARCHAR(32),
+    admin_session_id BIGINT,
+    user_agent VARCHAR(512),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_admin_ticket_audit_log_action CHECK (action IN ('CREATE', 'UPDATE', 'DELETE'))
 );
 
 CREATE TABLE user_session (
@@ -399,7 +431,7 @@ CREATE INDEX idx_ticket_order_item_raft_slot ON ticket_order_item (product_id, t
     WHERE raft_no IS NOT NULL;
 CREATE UNIQUE INDEX uq_ticket_order_item_passenger_slot
     ON ticket_order_item (ticket_type_id, time_slot_id, visit_date, passenger_id_type, passenger_id_number)
-    WHERE item_status <> 'CANCELLED';
+    WHERE item_status IN ('PENDING_PAYMENT', 'UNUSED', 'USED');
 CREATE INDEX idx_payment_record_status_paid_at ON payment_record (payment_status, paid_at);
 CREATE UNIQUE INDEX uq_payment_record_mockpay_event_idempotency
     ON payment_record (idempotency_key)
@@ -432,6 +464,7 @@ CREATE UNIQUE INDEX uk_admin_export_job_alert_event_open_dedupe
     ON admin_export_job_alert_event (job_id, error_code, alert_source)
     WHERE closed_at IS NULL;
 CREATE INDEX idx_admin_system_setting_audit_log_created ON admin_system_setting_audit_log (created_at DESC);
+CREATE INDEX idx_admin_ticket_audit_log_created ON admin_ticket_audit_log (created_at DESC);
 CREATE INDEX idx_admin_user_status ON admin_user (status);
 CREATE INDEX idx_route_product_status ON route_product (status);
 CREATE INDEX idx_route_product_piers ON route_product (start_pier_id, end_pier_id);

@@ -406,6 +406,7 @@ def contract_schema(schema: dict) -> dict:
 
 
 FRONTEND_RESPONSE_TYPE_SCHEMAS = {
+    "AdminAuditLogList": {"$ref": "#/components/schemas/AdminAuditLogListDTO"},
     "AdminMe": {"$ref": "#/components/schemas/AdminMeDTO"},
     "AdminBatchCheckIn": {"$ref": "#/components/schemas/AdminBatchCheckInDTO"},
     "AdminBatchUndoCheckIn": {"$ref": "#/components/schemas/AdminBatchUndoCheckInDTO"},

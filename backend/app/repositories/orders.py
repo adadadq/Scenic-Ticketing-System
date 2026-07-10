@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from collections.abc import Callable
 from typing import Protocol
@@ -10,6 +10,8 @@ from typing import Protocol
 from psycopg import errors
 
 from app.core.db import connect_db
+
+PAYMENT_HOLD_MINUTES = 15
 
 
 @dataclass(frozen=True)
@@ -129,6 +131,10 @@ class AdminCheckInAuditInput:
     operator_display_name: str
     request_id: str | None
     reason: str | None = None
+    source_ip: str | None = None
+    device_id: str | None = None
+    admin_session_id: int | None = None
+    user_agent: str | None = None
 
 
 @dataclass(frozen=True)
@@ -244,6 +250,10 @@ class AdminRefundAuditInput:
     operator_display_name: str
     reason: str | None
     request_id: str | None
+    source_ip: str | None = None
+    device_id: str | None = None
+    admin_session_id: int | None = None
+    user_agent: str | None = None
 
 
 @dataclass(frozen=True)
@@ -430,6 +440,9 @@ class PendingOrderItemInput:
 
 class OrderRepository(Protocol):
     def get_order_quote(self, product_id: int, time_slot_id: int, visit_date: date) -> OrderQuoteRecord | None:
+        ...
+
+    def expire_unpaid_orders(self, visitor_id: int, expired_before: datetime) -> int:
         ...
 
     def create_pending_order(
@@ -925,6 +938,50 @@ class PostgresOrderRepository:
             raise
         return order_from_row(order_row, item_records)
 
+    def expire_unpaid_orders(self, visitor_id: int, expired_before: datetime) -> int:
+        with connect_db() as connection:
+            order_rows = connection.execute(
+                """
+                SELECT id
+                FROM ticket_order
+                WHERE visitor_id = %s
+                  AND order_status = 'CREATED'
+                  AND payment_status = 'UNPAID'
+                  AND order_time <= %s
+                FOR UPDATE
+                """,
+                (visitor_id, expired_before),
+            ).fetchall()
+            if not order_rows:
+                return 0
+
+            order_ids = [row["id"] for row in order_rows]
+            placeholders = ", ".join(["%s"] * len(order_ids))
+            expired_at = datetime.now(UTC)
+            connection.execute(
+                f"""
+                UPDATE ticket_order_item
+                SET item_status = 'CANCELLED',
+                    updated_at = %s
+                WHERE order_id IN ({placeholders})
+                  AND item_status = 'PENDING_PAYMENT'
+                """,
+                (expired_at, *order_ids),
+            )
+            connection.execute(
+                f"""
+                UPDATE ticket_order
+                SET order_status = 'CANCELLED',
+                    cancel_time = %s,
+                    updated_at = %s
+                WHERE id IN ({placeholders})
+                  AND order_status = 'CREATED'
+                  AND payment_status = 'UNPAID'
+                """,
+                (expired_at, expired_at, *order_ids),
+            )
+            return len(order_ids)
+
     def list_orders_for_visitor(self, visitor_id: int, order_status: str | None = None) -> list[OrderRecord]:
         if order_status is None:
             where_clause = "WHERE visitor_id = %s"
@@ -1168,9 +1225,11 @@ class PostgresOrderRepository:
                 """
                 SELECT
                     id AS order_id,
+                    visitor_id,
                     order_no,
                     order_status,
                     payment_status,
+                    order_time,
                     payable_amount
                 FROM ticket_order
                 WHERE order_no = %s
@@ -1195,6 +1254,13 @@ class PostgresOrderRepository:
 
             if paid_amount != order_row["payable_amount"]:
                 raise OrderPaymentAmountMismatchError
+            if (
+                order_row["order_status"] == "CREATED"
+                and order_row["payment_status"] == "UNPAID"
+                and order_row["order_time"] <= processed_at - timedelta(minutes=PAYMENT_HOLD_MINUTES)
+            ):
+                self.expire_unpaid_orders(order_row["visitor_id"], processed_at - timedelta(minutes=PAYMENT_HOLD_MINUTES))
+                raise OrderPaymentStateError
             if order_row["order_status"] != "CREATED" or order_row["payment_status"] != "UNPAID":
                 raise OrderPaymentStateError
 
@@ -1777,9 +1843,13 @@ class PostgresOrderRepository:
                 operator_display_name,
                 request_id,
                 reason,
+                source_ip,
+                device_id,
+                admin_session_id,
+                user_agent,
                 created_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 order_id,
@@ -1793,6 +1863,10 @@ class PostgresOrderRepository:
                 audit.operator_display_name,
                 audit.request_id,
                 audit.reason,
+                audit.source_ip,
+                audit.device_id,
+                audit.admin_session_id,
+                audit.user_agent,
                 created_at,
             ),
         )
@@ -1955,9 +2029,13 @@ class PostgresOrderRepository:
                 operator_username,
                 operator_display_name,
                 request_id,
+                source_ip,
+                device_id,
+                admin_session_id,
+                user_agent,
                 created_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 ticket_code,
@@ -1968,6 +2046,10 @@ class PostgresOrderRepository:
                 audit.operator_username,
                 audit.operator_display_name,
                 audit.request_id,
+                audit.source_ip,
+                audit.device_id,
+                audit.admin_session_id,
+                audit.user_agent,
                 created_at,
             ),
         )
@@ -2459,9 +2541,13 @@ class PostgresOrderRepository:
                 operator_username,
                 operator_display_name,
                 request_id,
+                source_ip,
+                device_id,
+                admin_session_id,
+                user_agent,
                 created_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 order_id,
@@ -2475,6 +2561,10 @@ class PostgresOrderRepository:
                 audit.operator_username,
                 audit.operator_display_name,
                 audit.request_id,
+                audit.source_ip,
+                audit.device_id,
+                audit.admin_session_id,
+                audit.user_agent,
                 created_at,
             ),
         )
