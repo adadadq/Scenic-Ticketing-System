@@ -25,4 +25,6 @@ export type OrderDetail = OrderListItem & {
   contactName: string
   contactPhoneMasked: string
   ticketCodes: string[]
+  canSelfRefund: boolean
+  refundDeadline?: string
 }

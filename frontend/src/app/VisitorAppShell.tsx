@@ -1,6 +1,6 @@
-import { CustomerServiceOutlined, EnvironmentOutlined, OrderedListOutlined, ShoppingCartOutlined } from '@ant-design/icons'
-import { ConfigProvider, Layout, Menu, Typography } from 'antd'
-import type { ReactNode } from 'react'
+import { CloseOutlined, CustomerServiceOutlined, EnvironmentOutlined, MenuOutlined, OrderedListOutlined, ShoppingCartOutlined } from '@ant-design/icons'
+import { Button, ConfigProvider, Layout, Menu, Typography } from 'antd'
+import { useState, type ReactNode } from 'react'
 import { AuthStatus, type AuthMode } from '../features/auth/AuthStatus'
 import { appTheme } from '../shared/theme/theme'
 import type { VisitorPage } from './types'
@@ -34,10 +34,39 @@ export function VisitorAppShell({
   children,
   onPageChange,
 }: VisitorAppShellProps) {
+  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(
+    () => window.matchMedia('(max-width: 991px)').matches,
+  )
+
+  function openPage(page: VisitorPage) {
+    onPageChange(page)
+    if (window.matchMedia('(max-width: 991px)').matches) {
+      setIsNavigationCollapsed(true)
+    }
+  }
+
   return (
     <ConfigProvider theme={appTheme}>
       <Layout className={`app-shell visitor-shell visitor-shell-${activePage}`}>
-        <Sider className="app-sider visitor-sider" width={256} breakpoint="lg" collapsedWidth={0}>
+        <Button
+          aria-controls="visitor-navigation"
+          aria-expanded={!isNavigationCollapsed}
+          aria-label={isNavigationCollapsed ? '打开游客导航' : '关闭游客导航'}
+          className="visitor-mobile-nav-trigger"
+          icon={isNavigationCollapsed ? <MenuOutlined /> : <CloseOutlined />}
+          onClick={() => setIsNavigationCollapsed((collapsed) => !collapsed)}
+          type="primary"
+        />
+        <Sider
+          breakpoint="lg"
+          className="app-sider visitor-sider"
+          collapsed={isNavigationCollapsed}
+          collapsedWidth={0}
+          id="visitor-navigation"
+          onBreakpoint={setIsNavigationCollapsed}
+          trigger={null}
+          width={256}
+        >
           <div className="brand">
             <div className="brand-mark visitor-brand-mark"><ScenicLogo /></div>
             <div>
@@ -48,7 +77,7 @@ export function VisitorAppShell({
           <Menu
             className="side-menu"
             mode="inline"
-            onClick={({ key }) => onPageChange(key as VisitorPage)}
+            onClick={({ key }) => openPage(key as VisitorPage)}
             selectedKeys={[activePage]}
             items={[
               { key: 'booking', icon: <ShoppingCartOutlined />, label: '游客购票' },

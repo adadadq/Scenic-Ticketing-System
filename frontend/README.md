@@ -1,40 +1,59 @@
 # 遇龙河票务前端
 
-React + TypeScript + Vite + Ant Design 前端工程。当前阶段先完成游客购票工作台、我的订单、接口契约层和响应式基础体验。
+React + TypeScript + Vite + Ant Design 前端，包含游客移动端和景区运营管理端。
+
+## 页面
+
+- `/#/visitor/booking`：票种、日期时段、常用出行人、订单确认和支付。
+- `/#/visitor/orders`：订单筛选、详情、票码、继续支付、取消和退款。
+- `/#/visitor/service`：开放时间、入园说明、交通路线和退改说明。
+- `/#/admin`：票种、系统设置、订单、核销、退款审计、报表和导出任务。
 
 ## 常用命令
 
 ```bash
-npm install
+npm ci
 npm run dev
-npm run build
 npm run lint
+npm run test:contract
 npm run test:e2e
 npm run test:e2e:real
+npm run build
 ```
 
-开发服务器默认通过 Vite 代理把 `/api` 转发到 `http://127.0.0.1:8000`，如需直连其他后端地址可设置 `VITE_API_BASE_URL`。
-`npm run test:e2e` 默认会启动临时 mock API、临时 Vite 服务和本机 Chrome，验证游客登录、实名、下单、支付、票码展示和 390px 移动端无横向溢出。
-后端线程启动真实 API 后，可用 `npm run test:e2e:real` 让 E2E 通过 Vite `/api` 代理直连 `http://127.0.0.1:8000`，避免浏览器页面和 API 混用不同 hostname；脚本会先检查 `/api/health` 和 `/api/health/db`。
-如需连接其他后端地址，可用 `E2E_API_BASE_URL=http://127.0.0.1:8001 npm run test:e2e` 覆盖。
-根目录联调门禁也支持真实浏览器 smoke：`VERIFY_INTEGRATION_E2E=real scripts/verify-integration.sh`，同样可通过 `E2E_API_BASE_URL` 覆盖真实后端地址；前端日常开发仍默认使用 `npm run test:e2e` 的 mock API，根目录 `mock` 模式会忽略外部 `E2E_API_BASE_URL`。
-如果 Chrome 不在默认 macOS 路径，可设置 `CHROME_PATH=/path/to/chrome` 后再运行；真实后端模式还可设置 `E2E_VISITOR_NAME`、`E2E_PHONE`、`E2E_ID_NUMBER` 避免测试实名信息冲突。
+`test:e2e` 使用临时 mock API 验证当前游客端注册登录、常用出行人、下单、支付、退款和移动端布局；管理端接口与权限回归由后端 pytest 契约测试覆盖。
 
-## 契约约定
+开发服务器默认把 `/api` 代理到 `http://127.0.0.1:8000`。如需连接其他后端：
 
-- API source of truth: `../docs/api-contract.md`
-- 状态变更请求自动携带 CSRF header。
-- `POST /api/orders/{order_no}/pay` 必须传 `Idempotency-Key`。
-- 游客身份从后端 session 读取，前端不提交资源归属字段。
+```bash
+E2E_API_BASE_URL=http://127.0.0.1:8001 npm run test:e2e:real
+```
 
-## 当前目录
+如果 Chrome 不在默认 macOS 路径，设置 `CHROME_PATH=/path/to/chrome`。
+
+## 目录
 
 ```text
 src/
-  features/auth/    游客会话查询、手机号登录、实名登记和退出入口
-  features/booking/ 游客购票工作台页面、静态演示数据和页面私有类型
-  features/orders/  我的订单页面、订单查询/支付 query 和 view model adapter
-  shared/api/      API client、DTO 类型、endpoint wrapper
-  shared/theme/    Ant Design 主题 token
-  App.tsx          应用壳、导航和全局主题入口
+  app/                     游客端和管理端应用壳
+  features/auth/           游客注册、登录和会话
+  features/booking/        购票、时段、出行人与支付流程
+  features/orders/         游客订单、票码、取消与退款
+  features/visitor-service/ 游客服务页面
+  features/admin/          管理端工作台
+  features/admin-*/        管理端认证、订单、报表与审计请求
+  shared/api/              API client、DTO 和 endpoint
+  shared/theme/            Ant Design 主题 token
 ```
+
+## 接口约定
+
+- API 事实源：`../docs/api-contract.md`。
+- 状态变更请求自动携带 CSRF header。
+- 支付请求必须携带 `Idempotency-Key`。
+- 游客身份、订单归属和管理员权限均以后端 session 为准。
+- 前端与 API 使用 Cookie 时必须保持 hostname 一致。
+
+## 移动端验收
+
+关键页面以 iPhone 15 Pro 的 `393 × 852` 视口为主验收规格，同时要求页面无横向滚动、固定操作栏不遮挡内容、导航与登录/退出按钮不重叠。

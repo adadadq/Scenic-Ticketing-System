@@ -3,6 +3,7 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
   InfoCircleOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons'
 import { Alert, Button, Flex, Popconfirm, Result, Tag, Typography } from 'antd'
 import { useId, type ReactNode } from 'react'
@@ -129,6 +130,16 @@ function getOrderDetailStateCard({
     }
   }
 
+  if (order.orderStatus === 'REFUNDED') {
+    return {
+      detail: '订单已退款，原入园票码已失效，不可再用于入园。',
+      icon: <RollbackOutlined />,
+      label: '已退款',
+      tag: '票码失效',
+      tone: 'default',
+    }
+  }
+
   if (canPay || canCancel) {
     return {
       detail: '可继续支付，或在支付前取消订单；余票以支付结果为准。',
@@ -186,7 +197,7 @@ export function OrderPaymentSummary({ canPay, order }: OrderPaymentSummaryProps)
   return (
     <section className="order-payment-summary" aria-label="订单金额">
       <Flex align="flex-end" justify="space-between" gap={12}>
-        <Text>应付金额</Text>
+        <Text>{order.orderStatus === 'REFUNDED' ? '已退金额' : '应付金额'}</Text>
         <Text className="total-price">{formatCurrency(order.payableAmount)}</Text>
       </Flex>
 
@@ -220,6 +231,15 @@ function getTicketEmptyState(canPay: boolean, order: OrderListItem) {
     return {
       description: '已取消订单不会生成入园票码，可保留订单号用于客服查询。',
       title: '订单已取消',
+      type: 'info' as const,
+    }
+  }
+
+
+  if (order.orderStatus === 'REFUNDED') {
+    return {
+      description: '退款完成后原票码已失效，仅保留订单记录用于查询。',
+      title: '票码已失效',
       type: 'info' as const,
     }
   }
@@ -282,54 +302,76 @@ type OrderDetailActionBarProps = {
   canCancel: boolean
   canPay: boolean
   canSubmitPayment: boolean
+  canRefund: boolean
   isCanceling: boolean
   isPaying: boolean
   isPaymentBlocked: boolean
+  isRefunding: boolean
   onCancelOrder: () => void
   onPayOrder: () => void
+  onRefundOrder: () => void
 }
 
 export function OrderDetailActionBar({
   canCancel,
   canPay,
   canSubmitPayment,
+  canRefund,
   isCanceling,
   isPaying,
   isPaymentBlocked,
+  isRefunding,
   onCancelOrder,
   onPayOrder,
+  onRefundOrder,
 }: OrderDetailActionBarProps) {
   return (
     <Flex className="order-detail-actions" gap={10} wrap>
-      <Button
-        disabled={!canSubmitPayment || isCanceling}
-        icon={canSubmitPayment ? <CheckCircleFilled /> : <ClockCircleOutlined />}
-        loading={isPaying}
-        onClick={onPayOrder}
-        size="large"
-        type="primary"
-      >
-        {isPaymentBlocked ? '不可支付' : canPay ? '继续支付' : '无需支付'}
-      </Button>
-      <Popconfirm
-        cancelText="先不取消"
-        disabled={!canCancel}
-        getPopupContainer={(triggerNode) => triggerNode.parentElement ?? document.body}
-        okButtonProps={{ danger: true }}
-        okText="确认取消"
-        onConfirm={onCancelOrder}
-        title="确认取消这笔待支付订单？"
-      >
+      {canPay || isPaymentBlocked || isPaying ? (
+        <Button
+          disabled={!canSubmitPayment || isCanceling}
+          icon={canSubmitPayment ? <CheckCircleFilled /> : <ClockCircleOutlined />}
+          loading={isPaying}
+          onClick={onPayOrder}
+          size="large"
+          type="primary"
+        >
+          {isPaymentBlocked ? '不可支付' : '继续支付'}
+        </Button>
+      ) : null}
+      {canCancel || isCanceling ? (
+        <Popconfirm
+          cancelText="先不取消"
+          disabled={!canCancel}
+          getPopupContainer={(triggerNode) => triggerNode.parentElement ?? document.body}
+          okButtonProps={{ danger: true }}
+          okText="确认取消"
+          onConfirm={onCancelOrder}
+          title="确认取消这笔待支付订单？"
+        >
+          <Button
+            danger
+            disabled={!canCancel || isPaying}
+            icon={<CloseCircleOutlined />}
+            loading={isCanceling}
+            size="large"
+          >
+            取消订单
+          </Button>
+        </Popconfirm>
+      ) : null}
+      {canRefund ? (
         <Button
           danger
-          disabled={!canCancel || isPaying}
-          icon={<CloseCircleOutlined />}
-          loading={isCanceling}
+          disabled={isPaying || isCanceling}
+          icon={<RollbackOutlined />}
+          loading={isRefunding}
+          onClick={onRefundOrder}
           size="large"
         >
-          取消订单
+          申请退款
         </Button>
-      </Popconfirm>
+      ) : null}
     </Flex>
   )
 }

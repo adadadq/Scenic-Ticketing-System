@@ -99,9 +99,18 @@ export function PassengerAssignmentPanel({
       {messageContext}
       <Card
         className="workspace-card booking-passenger-card"
-        extra={<Button icon={<UserAddOutlined />} onClick={() => setIsManagerOpen(true)} type="link">常用出行人</Button>}
+        extra={<Button className="passenger-template-header-trigger" icon={<UserAddOutlined />} onClick={() => setIsManagerOpen(true)} type="link">常用出行人</Button>}
         title="出行人信息"
       >
+      <Button
+        block
+        className="mobile-passenger-template-trigger"
+        icon={<UserAddOutlined />}
+        onClick={() => setIsManagerOpen(true)}
+        type="dashed"
+      >
+        添加常用出行人
+      </Button>
       {lines.length === 0 ? (
         <Empty description="选择票种后填写出行人" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (

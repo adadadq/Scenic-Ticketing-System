@@ -210,6 +210,10 @@
   background: #fbfdfd;
 }
 
+.visitor-shell-booking .booking-passenger-card .mobile-passenger-template-trigger.ant-btn {
+  display: none;
+}
+
 .passenger-line-list {
   display: grid;
   gap: 12px;
@@ -642,35 +646,13 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .ticket-table {
     display: none;
   }
 
   .workspace-card .ant-card-extra {
     display: none;
-  }
-
-  .booking-selector-card .ant-card-body,
-  .booking-slot-card .ant-card-body,
-  .booking-summary-card .ant-card-body {
-    padding: 14px;
-  }
-
-  .slot-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ticket-card {
-    grid-template-columns: 18px minmax(0, 1fr) auto;
-  }
-
-  .ticket-card-art {
-    display: none;
-  }
-
-  .ticket-card-price {
-    font-size: 16px;
   }
 
   .date-strip {
@@ -1247,6 +1229,10 @@
     font-size: 38px;
   }
 
+  .slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .visitor-shell-booking .ticket-card-list,
   .passenger-field-grid,
   .passenger-template-form-grid,
@@ -1272,5 +1258,192 @@
   .booking-service-item + .booking-service-item {
     border-left: 0;
     border-top: 1px solid #e3eeee;
+  }
+}
+
+@media (max-width: 639px) {
+  .visitor-shell-booking .booking-heading {
+    min-height: 168px;
+    padding: 58px 18px 24px;
+  }
+
+  .visitor-shell-booking .booking-heading h1.ant-typography {
+    font-size: 34px;
+    margin-bottom: 8px;
+  }
+
+  .visitor-shell-booking .booking-heading-copy > .ant-typography:not(h1) {
+    font-size: 17px;
+  }
+
+  .visitor-shell-booking .booking-heading-actions {
+    right: 18px;
+    top: 12px;
+  }
+
+  .visitor-shell-booking .booking-heading-actions .ant-btn {
+    height: 40px;
+    min-width: 104px;
+    padding: 0 14px;
+  }
+
+  .visitor-shell-booking .booking-step-card .ant-card-body {
+    padding: 12px 10px;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item {
+    flex: none;
+    margin-inline-start: 0;
+    min-width: 0;
+    position: relative;
+    width: auto;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item:not(:last-child)::after {
+    background: #d8e1e8;
+    content: '';
+    height: 1px;
+    left: calc(50% + 16px);
+    position: absolute;
+    right: calc(-50% + 16px);
+    top: 12px;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-wrapper {
+    align-items: center;
+    display: grid;
+    gap: 5px;
+    grid-template-rows: 24px auto;
+    justify-items: center;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-icon {
+    font-size: 12px;
+    grid-row: 1;
+    height: 24px;
+    margin: 0;
+    width: 24px;
+    z-index: 1;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-section {
+    grid-row: 2;
+    min-width: 0;
+    text-align: center;
+    width: 100%;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-header {
+    display: block;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-rail,
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-content {
+    display: none;
+  }
+
+  .visitor-shell-booking .booking-step-card .booking-steps .ant-steps-item-title {
+    font-size: 12px;
+    line-height: 1.3;
+    padding-inline-end: 0;
+    white-space: nowrap;
+  }
+
+  .visitor-shell-booking .booking-selection-panel .booking-selector-card .ant-card-head,
+  .visitor-shell-booking .booking-selection-panel .booking-slot-card .ant-card-head {
+    padding: 0 14px;
+  }
+
+  .visitor-shell-booking .booking-selection-panel .booking-selector-card .ant-card-body,
+  .visitor-shell-booking .booking-selection-panel .booking-slot-card .ant-card-body,
+  .booking-passenger-card .ant-card-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .visitor-shell-booking .booking-passenger-card .passenger-template-header-trigger.ant-btn {
+    display: none;
+  }
+
+  .visitor-shell-booking .booking-passenger-card .mobile-passenger-template-trigger.ant-btn {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    margin-bottom: 14px;
+    min-height: 44px;
+  }
+
+  .visitor-shell-booking .ticket-card {
+    gap: 10px 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .visitor-shell-booking .ticket-card-art {
+    display: none;
+  }
+
+  .visitor-shell-booking .ticket-card-main {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+  }
+
+  .visitor-shell-booking .ticket-card-price {
+    align-self: start;
+    font-size: 18px;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .visitor-shell-booking .ticket-card .ticket-card-radio {
+    border-radius: 0 10px 0 10px;
+    height: 26px;
+    right: 0;
+    top: 0;
+    width: 48px;
+  }
+
+  .visitor-shell-booking .ticket-card.active .ticket-card-radio::after {
+    border: 0;
+    color: #fff;
+    content: '已选';
+    font-size: 11px;
+    font-weight: 700;
+    height: auto;
+    left: 50%;
+    line-height: 1;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    width: auto;
+  }
+
+  .visitor-shell-booking .ticket-card.active .ticket-card-price {
+    margin-top: 24px;
+  }
+
+  .slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .passenger-field-grid .ant-input,
+  .passenger-template-select,
+  .passenger-template-select .ant-select-selector {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1399px) {
+  .visitor-shell-booking .ticket-card-list {
+    grid-template-columns: 1fr;
   }
 }

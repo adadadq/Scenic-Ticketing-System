@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from collections.abc import Callable
 from typing import Protocol
+from zoneinfo import ZoneInfo
 
 from psycopg import errors
 
@@ -245,7 +246,7 @@ class AdminPartialRefundRecord:
 
 @dataclass(frozen=True)
 class AdminRefundAuditInput:
-    operator_admin_user_id: int
+    operator_admin_user_id: int | None
     operator_username: str
     operator_display_name: str
     reason: str | None
@@ -254,6 +255,8 @@ class AdminRefundAuditInput:
     device_id: str | None = None
     admin_session_id: int | None = None
     user_agent: str | None = None
+    operator_type: str = "ADMIN"
+    operator_visitor_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -536,7 +539,13 @@ class OrderRepository(Protocol):
     ) -> list[AdminCheckInFailureAuditLogRecord]:
         ...
 
-    def refund_order(self, order_no: str, audit: AdminRefundAuditInput) -> AdminRefundRecord | None:
+    def refund_order(
+        self,
+        order_no: str,
+        audit: AdminRefundAuditInput,
+        visitor_id: int | None = None,
+        refund_now: datetime | None = None,
+    ) -> AdminRefundRecord | None:
         ...
 
     def refund_order_items(
@@ -2109,10 +2118,18 @@ class PostgresOrderRepository:
             return "", ()
         return "WHERE " + " AND ".join(clauses), tuple(params)
 
-    def refund_order(self, order_no: str, audit: AdminRefundAuditInput) -> AdminRefundRecord | None:
+    def refund_order(
+        self,
+        order_no: str,
+        audit: AdminRefundAuditInput,
+        visitor_id: int | None = None,
+        refund_now: datetime | None = None,
+    ) -> AdminRefundRecord | None:
         with connect_db() as connection:
+            ownership_clause = "" if visitor_id is None else " AND visitor_id = %s"
+            order_params = (order_no,) if visitor_id is None else (order_no, visitor_id)
             order_row = connection.execute(
-                """
+                f"""
                 SELECT
                     id AS order_id,
                     order_no,
@@ -2121,9 +2138,10 @@ class PostgresOrderRepository:
                     paid_amount
                 FROM ticket_order
                 WHERE order_no = %s
+                {ownership_clause}
                 FOR UPDATE
                 """,
-                (order_no,),
+                order_params,
             ).fetchone()
             if not order_row:
                 return None
@@ -2139,6 +2157,7 @@ class PostgresOrderRepository:
                     item_no,
                     item_status,
                     time_slot_id,
+                    visit_date,
                     final_price
                 FROM ticket_order_item
                 WHERE order_id = %s
@@ -2149,6 +2168,14 @@ class PostgresOrderRepository:
             ).fetchall()
             if not item_rows or any(row["item_status"] != "UNUSED" for row in item_rows):
                 raise OrderNotRefundableError
+            if refund_now is not None:
+                refund_deadline = datetime.combine(
+                    min(row["visit_date"] for row in item_rows) - timedelta(days=1),
+                    time(18, 0),
+                    tzinfo=ZoneInfo("Asia/Shanghai"),
+                )
+                if refund_now.astimezone(ZoneInfo("Asia/Shanghai")) > refund_deadline:
+                    raise OrderRefundDeadlinePassedError
 
             payment_row = connection.execute(
                 """
@@ -2552,7 +2579,9 @@ class PostgresOrderRepository:
                 refunded_item_count,
                 refunded_item_nos,
                 reason,
+                operator_type,
                 operator_admin_user_id,
+                operator_visitor_id,
                 operator_username,
                 operator_display_name,
                 request_id,
@@ -2562,7 +2591,7 @@ class PostgresOrderRepository:
                 user_agent,
                 created_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 order_id,
@@ -2572,7 +2601,9 @@ class PostgresOrderRepository:
                 refunded_item_count,
                 json.dumps(refunded_item_nos, ensure_ascii=False),
                 audit.reason,
+                audit.operator_type,
                 audit.operator_admin_user_id,
+                audit.operator_visitor_id,
                 audit.operator_username,
                 audit.operator_display_name,
                 audit.request_id,
@@ -3214,6 +3245,10 @@ class OrderAlreadyRefundedError(Exception):
 
 
 class OrderNotRefundableError(Exception):
+    pass
+
+
+class OrderRefundDeadlinePassedError(Exception):
     pass
 
 

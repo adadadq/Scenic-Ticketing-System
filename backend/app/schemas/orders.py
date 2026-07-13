@@ -94,6 +94,8 @@ class OrderMeDTO(BaseModel):
     total_amount: Decimal = Field(alias="totalAmount")
     payable_amount: Decimal = Field(alias="payableAmount")
     order_time: datetime = Field(alias="orderTime")
+    can_self_refund: bool = Field(default=False, alias="canSelfRefund")
+    refund_deadline: datetime | None = Field(default=None, alias="refundDeadline")
     items: list[OrderItemMeDTO] = Field(default_factory=list)
 
     model_config = ConfigDict(populate_by_name=True)
@@ -359,6 +361,10 @@ class AdminRefundRequest(BaseModel):
         if not reason:
             raise ValueError("invalid refund reason")
         return reason
+
+
+class VisitorRefundRequest(AdminRefundRequest):
+    pass
 
 
 class AdminRefundDTO(BaseModel):

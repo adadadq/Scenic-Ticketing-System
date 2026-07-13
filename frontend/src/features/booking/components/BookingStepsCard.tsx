@@ -16,10 +16,10 @@ export function BookingStepsCard({ currentStep, currentStepLabel, items }: Booki
     <Card className="step-card booking-step-card">
       <Steps
         className="booking-steps"
-        current={0}
+        current={currentStep}
         data-current-step={currentStep}
         data-current-step-label={currentStepLabel}
-        responsive
+        responsive={false}
         items={items}
       />
     </Card>

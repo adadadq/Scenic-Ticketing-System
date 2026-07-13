@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { ApiError, createIdempotencyKey } from '../../shared/api/client'
-import { useCancelOrderMutation, usePayOrderMutation } from './queries'
+import { useCancelOrderMutation, usePayOrderMutation, useRefundOrderMutation } from './queries'
 import type { OrderDetail, OrderListItem } from './types'
 
 type RefreshableOrderDetailQuery = {
@@ -38,8 +38,10 @@ export function useOrderActions({
   const paymentKeys = useRef(new Map<string, string>())
   const payOrderMutation = usePayOrderMutation()
   const cancelOrderMutation = useCancelOrderMutation()
+  const refundOrderMutation = useRefundOrderMutation()
   const canPay = selectedDetail?.orderStatus === 'CREATED' && selectedDetail.paymentStatus === 'UNPAID'
   const canCancel = canPay
+  const canRefund = selectedDetail?.canSelfRefund === true
   const paymentSucceeded = selectedOrder?.paymentStatus === 'PAID' && ticketCodes.length > 0
   const paymentErrorMatchesSelectedOrder = Boolean(
     selectedOrder && payOrderMutation.variables?.orderNo === selectedOrder.orderNo,
@@ -83,6 +85,13 @@ export function useOrderActions({
     cancelOrderMutation.mutate(selectedOrder.orderNo)
   }
 
+  function refundSelectedOrder(reason?: string) {
+    if (!selectedOrder || !canRefund) {
+      return
+    }
+    refundOrderMutation.mutate({ orderNo: selectedOrder.orderNo, reason })
+  }
+
   async function refreshSelectedOrder() {
     if (!selectedOrder) {
       return
@@ -106,18 +115,24 @@ export function useOrderActions({
   return {
     canCancel,
     canPay,
+    canRefund,
     canSubmitPayment,
     cancelError: cancelOrderMutation.error,
     isCancelError: cancelOrderMutation.isError,
     isCanceling: cancelOrderMutation.isPending,
     isPaymentBlocked,
     isPaying: payOrderMutation.isPending,
+    isRefundError: refundOrderMutation.isError,
+    isRefunding: refundOrderMutation.isPending,
     isRefreshingBlockedPayment,
     onCancelOrder: cancelSelectedOrder,
     onPayOrder: paySelectedOrder,
+    onRefundOrder: refundSelectedOrder,
     onRefreshBlockedPayment: refreshSelectedOrder,
     paymentError: payOrderMutation.error,
     paymentSucceeded,
+    refundError: refundOrderMutation.error,
+    refundSucceeded: refundOrderMutation.isSuccess,
     shouldShowPaymentError,
   }
 }

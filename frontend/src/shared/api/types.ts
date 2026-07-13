@@ -47,6 +47,7 @@ export type {
   OrderStatusFilter,
   OrderSummary,
   PaymentStatus,
+  VisitorRefundRequest,
 } from './types/orders'
 
 export type {

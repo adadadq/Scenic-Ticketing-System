@@ -41,6 +41,7 @@ function writeRouteToHash(route: AppRoute) {
 function App() {
   const [route, setRoute] = useState<AppRoute>(() => readRouteFromHash())
   const [authDialogRequest, setAuthDialogRequest] = useState<{ mode: AuthMode; requestId: number }>()
+  const [createdOrderNo, setCreatedOrderNo] = useState<string>()
 
   useEffect(() => {
     function syncRouteFromHash() {
@@ -54,6 +55,12 @@ function App() {
     return () => window.removeEventListener('hashchange', syncRouteFromHash)
   }, [])
 
+  useEffect(() => {
+    if (route.mode !== 'visitor' || route.page !== 'orders') {
+      setCreatedOrderNo(undefined)
+    }
+  }, [route])
+
   function openAuthDialog(mode: AuthMode) {
     setAuthDialogRequest((request) => ({
       mode,
@@ -62,7 +69,15 @@ function App() {
   }
 
   function openVisitorPage(page: VisitorPage) {
+    setCreatedOrderNo(undefined)
     const nextRoute = { mode: 'visitor', page } as const
+    setRoute(nextRoute)
+    writeRouteToHash(nextRoute)
+  }
+
+  function openCreatedOrder(orderNo: string) {
+    const nextRoute = { mode: 'visitor', page: 'orders' } as const
+    setCreatedOrderNo(orderNo)
     setRoute(nextRoute)
     writeRouteToHash(nextRoute)
   }
@@ -88,12 +103,14 @@ function App() {
       {route.page === 'booking' && (
         <BookingWorkbench
           onOpenAuth={openAuthDialog}
+          onOrderCreated={openCreatedOrder}
           onOpenOrders={() => openVisitorPage('orders')}
           onOpenService={() => openVisitorPage('service')}
         />
       )}
       {route.page === 'orders' && (
         <OrdersWorkbench
+          initialOrderNo={createdOrderNo}
           onOpenAuth={() => openAuthDialog('login')}
           onOpenBooking={() => openVisitorPage('booking')}
           onOpenService={() => openVisitorPage('service')}

@@ -4,6 +4,7 @@ npm-debug.log*
 .venv
 .data/
 .codex-artifacts/
+.superpowers/
 .pytest_cache/
 __pycache__/
 *.py[cod]

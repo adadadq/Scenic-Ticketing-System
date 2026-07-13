@@ -1,17 +1,19 @@
-# 景区票务重构项目
+# 遇龙河景区票务系统
 
-本项目正在把原有票务系统重构为 FastAPI + React + Vite + Ant Design。当前对话负责后端，前端页面和交互由另一个对话并行推进。
+面向游客购票与景区运营管理的一体化系统，主线技术栈为 FastAPI、React、Vite、Ant Design 和 openGauss。线上演示地址：<http://scenic.ddx123.xyz/>。
 
 旧版 Node / Express / 静态页面基线已归档到 `legacy-node/`，只作为参考源，不作为当前主线继续开发。
 
-## 当前后端能力
+## 当前系统能力
 
-- 游客 CSRF 初始化、手机号登录、实名注册、当前会话查询、退出登录。
+- 游客 CSRF 初始化、账号密码注册/登录、当前会话查询和退出登录。
 - 公共票种和时段目录查询。
-- 实名游客创建待支付订单。
+- 游客常用出行人增删改查、订单出行人分配和重复时段校验。
+- 登录游客创建待支付订单。
 - 模拟支付，支持 `Idempotency-Key`，支付成功后扣库存、生成票码；当前支付 provider 固定为 `PAYMENT_PROVIDER=mock`。
-- 我的订单列表、订单详情、状态筛选。
-- 待支付订单取消；已支付订单 MVP 阶段不可取消。
+- 我的订单列表、详情、状态筛选、电子票码和移动端订单卡片。
+- 待支付订单取消；符合期限且未核销的已支付订单支持游客自助退款。
+- 游客购票、我的订单和游客服务页面已按 iPhone 15 Pro（393 × 852）完成移动端验收。
 - 第二阶段管理员能力：管理员登录、当前管理员、管理员退出、游客/管理员 session 隔离、后台订单只读列表/详情 API、单张票码核销 API、批量核销 API、撤销核销 API、批量撤销核销 API、撤销核销原因审计、核销审计日志、核销/撤销失败尝试审计及 CSV/XLSX 导出、全局检索、原因筛选和 CSV/XLSX 导出 API、全单模拟退款 API、部分模拟退款 API、退款审计日志、全局检索和 CSV/XLSX 导出 API、后台运营汇总报表 API、后台支付对账汇总 API、后台支付对账汇总 CSV/XLSX 导出、后台产品维度报表 API、后台产品维度报表 CSV/XLSX 导出、后台日报趋势报表 API、后台小时趋势报表 API、后台月度趋势报表 API、后台趋势报表补零、后台趋势报表 CSV/XLSX 导出、后台同步导出行数上限、后台异步导出任务基础、后台异步导出任务文件格式筛选、后台异步导出 filters 白名单、后台异步导出 worker 状态机基础、后台异步导出失败字段长度契约对齐、后台异步导出文件下载端点、后台异步导出失败任务手动/自动重试、后台异步导出自动重试延迟领取、后台异步导出 RUNNING 超时回收、后台异步导出 RUNNING 超时最终失败告警事件记录、后台异步导出本地孤儿文件补偿清理、后台异步导出告警 provider 边界、后台异步导出最终失败告警事件记录、后台异步导出告警事件只读查询 API、后台异步导出告警事件汇总 API、后台异步导出告警事件确认 API、后台异步导出告警事件批量确认 API、后台异步导出告警事件关闭和重开 API、后台异步导出告警事件批量关闭 API、后台异步导出告警事件关闭筛选和汇总增强、后台异步导出告警事件去重静默、后台异步导出告警事件类型和格式筛选、后台异步导出告警事件删除 API、后台异步导出告警事件批量删除 API、后台异步订单明细 CSV/XLSX 生成 worker、后台异步核销审计 CSV/XLSX 生成 worker、后台异步核销失败审计 CSV/XLSX 生成 worker、后台异步退款审计 CSV/XLSX 生成 worker、后台异步支付对账 CSV/XLSX 生成 worker、后台异步产品维度报表 CSV/XLSX 生成 worker、后台异步日报趋势 CSV/XLSX 生成 worker、后台异步小时趋势 CSV/XLSX 生成 worker、后台异步月度趋势 CSV/XLSX 生成 worker、模拟支付回调安全边界，以及后台订单 CSV/XLSX 导出。
 
 ## 后端启动
@@ -33,7 +35,7 @@ uvicorn app.main:app --app-dir backend --reload
 
 前端共享 API client 默认读取 `scenic_csrf` Cookie；如果后端通过 `CSRF_COOKIE_NAME` 改名，前端环境也要同步设置 `VITE_CSRF_COOKIE_NAME`，否则状态变更请求无法注入 CSRF token。
 
-游客登录接口默认按客户端地址和手机号限制为 60 秒内 5 次，可通过 `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` 和 `LOGIN_RATE_LIMIT_WINDOW_SECONDS` 调整。当前 MVP 使用 `SMS_PROVIDER=disabled` 的手机号直登演示流和 `LOGIN_RATE_LIMIT_PROVIDER=memory` 进程内内存限速；真实短信验证码、账号风控、多进程或多实例全局限速都需要后续单独接入，未实现 provider 会被拒绝启动。
+游客登录接口默认按客户端地址和账号限制为 60 秒内 5 次，可通过 `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` 和 `LOGIN_RATE_LIMIT_WINDOW_SECONDS` 调整。当前使用 `SMS_PROVIDER=disabled` 和 `LOGIN_RATE_LIMIT_PROVIDER=memory` 进程内内存限速；真实短信验证码、账号风控、多进程或多实例全局限速都需要后续单独接入，未实现 provider 会被拒绝启动。
 
 ## 后端测试
 
@@ -84,6 +86,8 @@ VERIFY_INTEGRATION_E2E=real scripts/verify-integration.sh
 VERIFY_INTEGRATION_E2E=real E2E_API_BASE_URL=http://127.0.0.1:8001 scripts/verify-integration.sh
 ```
 
+浏览器 smoke 当前聚焦游客端注册登录、常用出行人、下单、支付、退款和移动端布局；管理端接口、权限与写操作由后端 pytest 覆盖，生产发布时再执行真实管理员 smoke。
+
 后端里程碑完成度和下一阶段边界见 `docs/backend-milestone-status.md`，其中已包含管理员认证、订单只读、单张/批量/撤销/批量撤销核销、撤销核销原因审计、核销/撤销失败尝试审计及 CSV/XLSX 导出、核销审计检索/导出、整单/部分退款、退款审计日志与检索/导出、报表和导出切片。阶段 8 后端验收证据见 `docs/backend-acceptance-report.md`。安全清单到代码和测试的逐项映射见 `docs/backend-security-audit.md`。
 
 导出 OpenAPI 契约给前端联调用：
@@ -119,13 +123,24 @@ Linux 部署环境可参考 `deploy/systemd/scenic-ticket-admin-export-worker.se
 ## API 工作流
 
 1. `GET /api/auth/csrf` 获取 CSRF Cookie。
-2. `POST /api/auth/visitor/login` 手机号进入系统。
-3. `POST /api/auth/visitor/register` 完成实名。
+2. `POST /api/auth/visitor/register` 使用账号、密码和手机号注册；已有账号使用 `POST /api/auth/visitor/login` 登录。
+3. `GET/POST/PATCH/DELETE /api/me/passenger-templates` 维护常用出行人。
 4. `GET /api/catalog/products` 和 `GET /api/catalog/time-slots` 浏览票种与时段。
 5. `POST /api/orders` 创建待支付订单。
 6. `POST /api/orders/{order_no}/pay` 模拟支付，必须带 `Idempotency-Key`。
 7. `GET /api/me/orders` / `GET /api/me/orders/{order_no}` 查看订单。
 8. `POST /api/orders/{order_no}/cancel` 仅取消当前游客自己的待支付订单。
+9. `POST /api/orders/{order_no}/refund` 在退票期限内申请游客自助退款。
+
+## 使用与部署文档
+
+- 游客端和管理端操作：[docs/usage.md](docs/usage.md)
+- 本地前端说明：[frontend/README.md](frontend/README.md)
+- 数据库初始化与迁移：[database/README.md](database/README.md)
+- 生产部署与回滚：[docs/deployment.md](docs/deployment.md)
+- 系统架构：[docs/architecture.md](docs/architecture.md)
+- API 契约：[docs/api-contract.md](docs/api-contract.md)
+- 版本变更：[CHANGELOG.md](CHANGELOG.md)
 
 ## 安全边界
 

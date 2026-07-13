@@ -91,16 +91,19 @@ export function createE2eOrderFactory({ phone, visitorName }) {
   return function createOrder(orderNo = 'ORD-E2E-001', status = 'CREATED') {
     const paid = status === 'PAID'
     const cancelled = status === 'CANCELLED'
+    const refunded = status === 'REFUNDED'
 
     return {
       orderNo,
       buyerName: visitorName,
       buyerPhone: phone,
       orderStatus: status,
-      paymentStatus: paid ? 'PAID' : 'UNPAID',
+      paymentStatus: paid ? 'PAID' : refunded ? 'REFUNDED' : 'UNPAID',
       totalAmount: '176.00',
       payableAmount: '176.00',
       orderTime: '2026-06-28T15:00:00+08:00',
+      canSelfRefund: paid,
+      refundDeadline: `${tomorrowDate}T18:00:00+08:00`,
       items: [1, 2].map((index) => ({
         itemNo: `ITEM-E2E-00${index}`,
         productId: 1,
@@ -113,12 +116,12 @@ export function createE2eOrderFactory({ phone, visitorName }) {
         slotEndTime: '11:00:00',
         originalPrice: '108.00',
         finalPrice: '88.00',
-        itemStatus: paid ? 'UNUSED' : cancelled ? 'CANCELLED' : 'PENDING_PAYMENT',
+        itemStatus: paid ? 'UNUSED' : refunded ? 'REFUNDED' : cancelled ? 'CANCELLED' : 'PENDING_PAYMENT',
         passengerName: index === 1 ? visitorName : '李四',
         passengerIdType: 'ID_CARD',
         passengerIdNumberMasked: `110********00${index}`,
         passengerPhoneMasked: `${phone.slice(0, 3)}****${phone.slice(-4)}`,
-        ...(paid ? { ticketCode: `TICKET-E2E-00${index}-LONG-CODE-20260701-ABCDEFGHIJK` } : {}),
+        ...(paid || refunded ? { ticketCode: `TICKET-E2E-00${index}-LONG-CODE-20260701-ABCDEFGHIJK` } : {}),
       })),
     }
   }
@@ -161,6 +164,7 @@ export function createMockApi({ password, phone, username, visitorName }) {
     ],
     payAttemptsByOrder: new Map(),
     paymentAttempts: [],
+    refundBodies: [],
     quotaNotEnoughOrderNos: new Set(),
     registerBodies: [],
     registerConflictPhones: new Set(),
@@ -507,6 +511,26 @@ export function createMockApi({ password, phone, username, visitorName }) {
       state.cancelOrderNo = cancelMatch[1]
       state.cancelOrderNos.push(cancelMatch[1])
       state.orders[index] = createOrder(cancelMatch[1], 'CANCELLED')
+      json(200, ok(state.orders[index]))
+      return
+    }
+
+    const refundMatch = url.pathname.match(/^\/api\/orders\/(ORD-E2E-\d{3})\/refund$/)
+    if (request.method === 'POST' && refundMatch) {
+      if (!requireCsrf()) {
+        return
+      }
+      const index = state.orders.findIndex((candidate) => candidate.orderNo === refundMatch[1])
+      if (index === -1) {
+        json(404, fail('ORDER_NOT_FOUND', 'Order not found'))
+        return
+      }
+      if (!state.orders[index].canSelfRefund) {
+        json(409, fail('ORDER_NOT_REFUNDABLE', '当前订单不可退款'))
+        return
+      }
+      state.refundBodies.push(await readJson(request))
+      state.orders[index] = createOrder(refundMatch[1], 'REFUNDED')
       json(200, ok(state.orders[index]))
       return
     }

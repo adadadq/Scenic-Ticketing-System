@@ -252,11 +252,28 @@ def test_schema_contains_refund_audit_log_baseline():
     assert "CREATE TABLE refund_audit_log" in schema
     assert schema.index("CREATE TABLE admin_user") < schema.index("CREATE TABLE refund_audit_log")
     assert "order_id BIGINT NOT NULL REFERENCES ticket_order(id)" in schema
-    assert "operator_admin_user_id BIGINT NOT NULL REFERENCES admin_user(id)" in schema
+    assert "operator_type VARCHAR(20) NOT NULL" in schema
+    assert "operator_admin_user_id BIGINT REFERENCES admin_user(id)" in schema
+    assert "operator_visitor_id BIGINT REFERENCES visitor(id)" in schema
     assert "refunded_item_nos JSONB NOT NULL" in schema
     assert "CONSTRAINT ck_refund_audit_log_type CHECK (refund_type IN ('FULL', 'PARTIAL'))" in schema
     assert "idx_refund_audit_log_order_created ON refund_audit_log (order_id, created_at DESC)" in schema
     assert "idx_refund_audit_log_created ON refund_audit_log (created_at DESC)" in schema
+    assert "idx_refund_audit_log_visitor_created ON refund_audit_log (operator_visitor_id, created_at DESC)" in schema
+
+
+def test_visitor_refund_audit_actor_migration_exists():
+    migration = (SCHEMA_PATH.parent / "migrations" / "2026-07-13-add-visitor-refund-audit-actor.sql").read_text(
+        encoding="utf-8"
+    )
+
+    assert "information_schema.columns" in migration
+    assert "column_name = 'operator_type'" in migration
+    assert "ADD COLUMN operator_type" in migration
+    assert "column_name = 'operator_visitor_id'" in migration
+    assert "ADD COLUMN operator_visitor_id" in migration
+    assert "ADD COLUMN IF NOT EXISTS" not in migration
+    assert "ALTER COLUMN operator_admin_user_id DROP NOT NULL" in migration
 
 
 def test_schema_contains_check_in_audit_log_baseline():

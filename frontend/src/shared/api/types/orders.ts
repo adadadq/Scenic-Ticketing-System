@@ -1,5 +1,5 @@
-export type OrderStatus = 'CREATED' | 'PAID' | 'CANCELLED' | 'COMPLETED' | 'REFUNDING' | (string & {})
-export type OrderStatusFilter = 'CREATED' | 'PAID' | 'CANCELLED'
+export type OrderStatus = 'CREATED' | 'PAID' | 'CANCELLED' | 'COMPLETED' | 'REFUNDING' | 'REFUNDED' | (string & {})
+export type OrderStatusFilter = 'CREATED' | 'PAID' | 'CANCELLED' | 'REFUNDED'
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED' | (string & {})
 export type AdminOrderStatus = 'CREATED' | 'PAID' | 'CANCELLED' | 'COMPLETED' | 'REFUNDING' | 'REFUNDED' | (string & {})
 export type AdminOrderStatusFilter = 'CREATED' | 'PAID' | 'CANCELLED' | 'COMPLETED' | 'REFUNDING' | 'REFUNDED'
@@ -68,7 +68,13 @@ export type OrderMe = {
   totalAmount: string
   payableAmount: string
   orderTime: string
+  canSelfRefund: boolean
+  refundDeadline?: string
   items: OrderItemMe[]
+}
+
+export type VisitorRefundRequest = {
+  reason?: string
 }
 
 export type OrderSummary = OrderMe

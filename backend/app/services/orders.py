@@ -9,6 +9,7 @@ import zipfile
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from xml.sax.saxutils import escape, quoteattr
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Request
 from pydantic import ValidationError
@@ -16,6 +17,7 @@ from pydantic import ValidationError
 from app.core.config import AppSettings, get_settings
 from app.core.admin_audit import get_admin_audit_context
 from app.core.errors import AppError
+from app.core.client_ip import get_client_ip
 from app.repositories.auth import VisitorRecord
 from app.repositories.orders import (
     AdminOrderListFilter,
@@ -58,6 +60,7 @@ from app.repositories.orders import (
     OrderQuotaNotEnoughError,
     OrderRecord,
     OrderRefundItemsInvalidError,
+    OrderRefundDeadlinePassedError,
     OrderRepository,
     PassengerTemplateMismatchError,
     PassengerTimeSlotDuplicateError,
@@ -104,10 +107,11 @@ from app.schemas.orders import (
     OrderCreateRequest,
     OrderItemMeDTO,
     OrderMeDTO,
+    VisitorRefundRequest,
 )
 from app.services.auth import AdminAuthService, AuthService, get_admin_auth_service, get_auth_service
 
-ORDER_STATUS_FILTER_OPTIONS = ("CREATED", "PAID", "CANCELLED")
+ORDER_STATUS_FILTER_OPTIONS = ("CREATED", "PAID", "CANCELLED", "REFUNDED")
 ORDER_STATUS_FILTERS = set(ORDER_STATUS_FILTER_OPTIONS)
 ADMIN_ORDER_STATUS_FILTER_OPTIONS = ("CREATED", "PAID", "CANCELLED", "COMPLETED", "REFUNDING", "REFUNDED")
 ADMIN_ORDER_STATUS_FILTERS = set(ADMIN_ORDER_STATUS_FILTER_OPTIONS)
@@ -285,6 +289,39 @@ class OrderService:
             raise AppError(404, "ORDER_NOT_FOUND", ORDER_NOT_FOUND_MESSAGE)
         return self.to_order_dto(order)
 
+    def refund_order(self, order_no: str, payload: VisitorRefundRequest, request: Request) -> OrderMeDTO:
+        visitor = self.current_visitor(request)
+        audit = AdminRefundAuditInput(
+            operator_admin_user_id=None,
+            operator_username=visitor.username or visitor.phone,
+            operator_display_name=visitor.visitor_name,
+            reason=payload.reason,
+            request_id=AdminRefundService.to_refund_audit_request_id(getattr(request.state, "request_id", None)),
+            source_ip=get_client_ip(request),
+            user_agent=request.headers.get("user-agent"),
+            operator_type="VISITOR",
+            operator_visitor_id=visitor.id,
+        )
+        try:
+            record = self.repository.refund_order(
+                order_no.strip(),
+                audit,
+                visitor_id=visitor.id,
+                refund_now=datetime.now(UTC),
+            )
+        except OrderAlreadyRefundedError as exc:
+            raise AppError(409, "ORDER_ALREADY_REFUNDED", "订单已退款") from exc
+        except OrderRefundDeadlinePassedError as exc:
+            raise AppError(409, "ORDER_REFUND_DEADLINE_PASSED", "已超过退款截止时间") from exc
+        except OrderNotRefundableError as exc:
+            raise AppError(409, "ORDER_NOT_REFUNDABLE", "当前订单不可退款") from exc
+        if record is None:
+            raise AppError(404, "ORDER_NOT_FOUND", ORDER_NOT_FOUND_MESSAGE)
+        order = self.repository.get_order_for_visitor(visitor.id, order_no.strip())
+        if order is None:
+            raise AppError(404, "ORDER_NOT_FOUND", ORDER_NOT_FOUND_MESSAGE)
+        return self.to_order_dto(order)
+
     def current_visitor(self, request: Request) -> VisitorRecord:
         return self.auth_service.current_session_visitor(request).visitor
 
@@ -337,6 +374,15 @@ class OrderService:
 
     @staticmethod
     def to_order_dto(order: OrderRecord) -> OrderMeDTO:
+        refund_deadline = OrderService.refund_deadline(order)
+        can_self_refund = (
+            order.order_status == "PAID"
+            and order.payment_status == "PAID"
+            and bool(order.items)
+            and all(item.item_status == "UNUSED" for item in order.items)
+            and refund_deadline is not None
+            and datetime.now(UTC).astimezone(ZoneInfo("Asia/Shanghai")) <= refund_deadline
+        )
         return OrderMeDTO(
             order_no=order.order_no,
             buyer_name=order.buyer_name,
@@ -346,7 +392,19 @@ class OrderService:
             total_amount=order.total_amount,
             payable_amount=order.payable_amount,
             order_time=order.order_time,
+            can_self_refund=can_self_refund,
+            refund_deadline=refund_deadline,
             items=[OrderService.to_item_dto(item) for item in order.items],
+        )
+
+    @staticmethod
+    def refund_deadline(order: OrderRecord) -> datetime | None:
+        if not order.items:
+            return None
+        return datetime.combine(
+            min(item.visit_date for item in order.items) - timedelta(days=1),
+            datetime.min.time().replace(hour=18),
+            tzinfo=ZoneInfo("Asia/Shanghai"),
         )
 
     @staticmethod

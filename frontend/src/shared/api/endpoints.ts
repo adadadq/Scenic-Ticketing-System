@@ -69,6 +69,7 @@ import type {
   VisitorLoginRequest,
   VisitorMe,
   VisitorRegisterRequest,
+  VisitorRefundRequest,
 } from './types'
 
 export const healthApi = {
@@ -355,6 +356,11 @@ export const ordersApi = {
     }),
   cancel: (orderNo: string) =>
     apiRequest<MyOrderDetail>(`/api/orders/${encodeURIComponent(orderNo)}/cancel`, { method: 'POST' }),
+  refund: (orderNo: string, body: VisitorRefundRequest = {}) =>
+    apiRequest<MyOrderDetail>(`/api/orders/${encodeURIComponent(orderNo)}/refund`, {
+      body: { reason: compactText(body.reason) },
+      method: 'POST',
+    }),
 }
 
 export const passengerTemplatesApi = {

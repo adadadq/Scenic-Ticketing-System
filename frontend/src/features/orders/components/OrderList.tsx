@@ -85,6 +85,10 @@ function getMobileOrderToneClass(order: OrderListItem) {
     return 'is-cancelled'
   }
 
+  if (order.orderStatus === 'REFUNDED') {
+    return 'is-refunded'
+  }
+
   return 'is-readonly'
 }
 
@@ -206,7 +210,7 @@ export function OrderList({
                   </span>
                 </span>
                 <span className="order-mobile-card-footer">
-                  <Text type="secondary">应付金额</Text>
+                  <Text type="secondary">{order.orderStatus === 'REFUNDED' ? '已退金额' : '应付金额'}</Text>
                   <Text className="price">{formatCurrency(order.payableAmount)}</Text>
                 </span>
                 <span className="order-mobile-card-action">{getMobileOrderActionLabel(order)}</span>

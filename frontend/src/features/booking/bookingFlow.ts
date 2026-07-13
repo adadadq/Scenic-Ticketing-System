@@ -283,7 +283,11 @@ export function getPrimaryActionLabel(authRequiredMode: BookingAuthMode | undefi
   return isSessionLoading ? '检查中' : '提交订单'
 }
 
-export function getMobileActionLabel(authRequiredMode: BookingAuthMode | undefined, isSessionLoading: boolean) {
+export function getMobileActionLabel(
+  authRequiredMode: BookingAuthMode | undefined,
+  isSessionLoading: boolean,
+  currentStep: number,
+) {
   if (authRequiredMode === 'login') {
     return '登录'
   }
@@ -292,7 +296,11 @@ export function getMobileActionLabel(authRequiredMode: BookingAuthMode | undefin
     return '注册'
   }
 
-  return isSessionLoading ? '检查中' : '下单'
+  if (isSessionLoading) {
+    return '检查中'
+  }
+
+  return ['选择票种', '选择时段', '填写出行人', '提交订单并支付'][currentStep] ?? '继续购票'
 }
 
 export function getBookingStepIndex({

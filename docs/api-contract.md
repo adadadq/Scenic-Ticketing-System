@@ -25,6 +25,7 @@ DELETE /api/me/passenger-templates/{template_id}
 POST /api/orders
 POST /api/orders/{order_no}/pay
 POST /api/orders/{order_no}/cancel
+POST /api/orders/{order_no}/refund
 GET  /api/me/orders
 GET  /api/me/orders/{order_no}
 ```
@@ -228,12 +229,14 @@ POST /api/payments/mock/callback
 - `POST /api/orders` 请求体使用 `buyerName`、`buyerPhone`、`items`。
 - `items[]` 请求项使用 `productId`、`timeSlotId`、`visitDate`、`quantity` 和 `passengers[]`；前端不能提交 `visitorId`。
 - `passengers[]` 每项使用 `passengerName`、`idType`、`idNumber`、`phone`，可带当前游客自己的 `templateId`；数量必须等于该票项 `quantity`。
-- `OrderMeDTO` 至少包含 `orderNo`、`buyerName`、`buyerPhone`、`orderStatus`、`paymentStatus`、`totalAmount`、`payableAmount`、`orderTime`、`items`。
+- `OrderMeDTO` 至少包含 `orderNo`、`buyerName`、`buyerPhone`、`orderStatus`、`paymentStatus`、`totalAmount`、`payableAmount`、`orderTime`、`canSelfRefund`、`refundDeadline`、`items`。
 - `items[]` 响应项至少包含 `itemNo`、`productId`、`ticketTypeId`、`productName`、`ticketName`、`timeSlotId`、`visitDate`、`slotStartTime`、`slotEndTime`、`originalPrice`、`finalPrice`、`itemStatus`、`passengerName`、`passengerIdType`、`passengerIdNumberMasked`、`passengerPhoneMasked`；支付后可返回 `ticketCode`；核验分配竹筏后可返回 `raftNo`、`raftSeatNo`、`raftAssignedAt`。
 - `totalAmount`、`payableAmount`、`originalPrice`、`finalPrice` 按字符串接收，前端 view model 再转换成数字展示。
 - 同一证件在同一票种、同一日期和同一时段只能存在一张未取消票；重复下单返回 `409 PASSENGER_TIME_SLOT_DUPLICATED`。
 - `POST /api/orders/{order_no}/pay` 必须传 `Idempotency-Key`；同一次支付尝试必须复用同一个幂等键。
 - `POST /api/orders/{order_no}/cancel` 只允许取消当前游客自己的 `CREATED` + `UNPAID` 订单，成功后订单为 `CANCELLED`，明细为 `CANCELLED`。
+- `POST /api/orders/{order_no}/refund` 只允许当前游客退自己的 `PAID + PAID` 整单，所有票项必须为 `UNUSED`，且必须在最早游玩日前一天 18:00（Asia/Shanghai）前提交；仅接受最长 100 字的可选 `reason`。
+- 游客退款成功后订单、支付和票项均为 `REFUNDED`，同时回补已售库存并写入 `VISITOR` 操作人退款审计；不属于当前游客和不存在的订单统一返回 `404 ORDER_NOT_FOUND`。
 - `GET /api/me/orders` 支持可选 `status` 查询参数，OpenAPI 必须声明枚举 `CREATED`、`PAID`、`CANCELLED`；非法状态统一返回 `422 ORDER_STATUS_INVALID`。
 - 订单详情、支付、取消遇到不存在或非当前游客订单时统一返回 `404 ORDER_NOT_FOUND`，消息为“订单不存在或无权限访问”，响应体不回显订单号。
 - 游客订单响应中的 `buyerPhone` 使用脱敏展示，不返回证件号。

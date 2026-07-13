@@ -28,6 +28,10 @@ export function mapOrderDetail(order: MyOrderDetail): OrderDetail {
     ...mapOrderSummary(order),
     contactName: order.buyerName,
     contactPhoneMasked: maskPhone(order.buyerPhone),
-    ticketCodes: order.items.flatMap((item) => (item.ticketCode ? [item.ticketCode] : [])),
+    ticketCodes: order.items.flatMap((item) => (
+      item.itemStatus !== 'REFUNDED' && item.ticketCode ? [item.ticketCode] : []
+    )),
+    canSelfRefund: order.canSelfRefund,
+    refundDeadline: order.refundDeadline,
   }
 }

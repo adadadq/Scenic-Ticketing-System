@@ -8,16 +8,19 @@ export const statusFilterOptions = [
   { label: '待支付', value: 'CREATED' },
   { label: '已支付', value: 'PAID' },
   { label: '已取消', value: 'CANCELLED' },
+  { label: '已退款', value: 'REFUNDED' },
 ] satisfies Array<{ label: string; value: OrderStatusFilterValue }>
 
 const emptyOrders: OrderListItem[] = []
 
-export function useOrdersSelection() {
+export function useOrdersSelection(initialOrderNo?: string) {
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilterValue>('ALL')
   const [keyword, setKeyword] = useState('')
   const [visitDateFilter, setVisitDateFilter] = useState('')
-  const [selectedOrderNo, setSelectedOrderNo] = useState<string>()
-  const [isMobileDetailOpen, setMobileDetailOpen] = useState(false)
+  const [selectedOrderNo, setSelectedOrderNo] = useState<string | undefined>(initialOrderNo)
+  const [isMobileDetailOpen, setMobileDetailOpen] = useState(
+    () => Boolean(initialOrderNo && window.matchMedia('(max-width: 768px)').matches),
+  )
   const orderStatus: OrderStatusFilter | undefined = statusFilter === 'ALL' ? undefined : statusFilter
   const ordersQuery = useMyOrdersQuery(orderStatus)
   const orderDetailQuery = useOrderDetailQuery(selectedOrderNo)
@@ -44,9 +47,13 @@ export function useOrdersSelection() {
     }
 
     if (selectedOrderNo && !filteredOrders.some((order) => order.orderNo === selectedOrderNo)) {
+      if (selectedOrderNo === initialOrderNo) {
+        return
+      }
+
       setSelectedOrderNo(filteredOrders[0]?.orderNo)
     }
-  }, [filteredOrders, selectedOrderNo])
+  }, [filteredOrders, initialOrderNo, selectedOrderNo])
 
   const selectedListOrder = filteredOrders.find((order) => order.orderNo === selectedOrderNo)
   const selectedDetail = orderDetailQuery.data
@@ -56,10 +63,19 @@ export function useOrdersSelection() {
   const isDetailUnavailable = Boolean(selectedOrder && orderDetailQuery.isError && !selectedDetail)
 
   useEffect(() => {
-    if (!selectedOrder) {
+    if (
+      initialOrderNo &&
+      selectedOrder?.orderNo === initialOrderNo &&
+      window.matchMedia('(max-width: 768px)').matches
+    ) {
+      setMobileDetailOpen(true)
+      return
+    }
+
+    if (!selectedOrder && !initialOrderNo) {
       setMobileDetailOpen(false)
     }
-  }, [selectedOrder])
+  }, [initialOrderNo, selectedOrder])
 
   useEffect(() => {
     const desktopQuery = window.matchMedia('(min-width: 769px)')

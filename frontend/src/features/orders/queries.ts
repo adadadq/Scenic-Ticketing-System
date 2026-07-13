@@ -57,6 +57,9 @@ export function usePayOrderMutation() {
   return useMutation({
     mutationFn: async (variables: PayOrderVariables) =>
       mapOrderDetail(await ordersApi.pay(variables.orderNo, variables.idempotencyKey)),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: orderQueryKeys.detail(variables.orderNo) })
+    },
     onSuccess: (order) => {
       queryClient.setQueryData(orderQueryKeys.detail(order.orderNo), order)
       queryClient.invalidateQueries({ queryKey: ['orders', 'mine'] })
@@ -69,6 +72,25 @@ export function useCancelOrderMutation() {
 
   return useMutation({
     mutationFn: async (orderNo: string) => mapOrderDetail(await ordersApi.cancel(orderNo)),
+    onMutate: async (orderNo) => {
+      await queryClient.cancelQueries({ queryKey: orderQueryKeys.detail(orderNo) })
+    },
+    onSuccess: (order) => {
+      queryClient.setQueryData(orderQueryKeys.detail(order.orderNo), order)
+      queryClient.invalidateQueries({ queryKey: ['orders', 'mine'] })
+    },
+  })
+}
+
+export function useRefundOrderMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ orderNo, reason }: { orderNo: string; reason?: string }) =>
+      mapOrderDetail(await ordersApi.refund(orderNo, { reason })),
+    onMutate: async ({ orderNo }) => {
+      await queryClient.cancelQueries({ queryKey: orderQueryKeys.detail(orderNo) })
+    },
     onSuccess: (order) => {
       queryClient.setQueryData(orderQueryKeys.detail(order.orderNo), order)
       queryClient.invalidateQueries({ queryKey: ['orders', 'mine'] })

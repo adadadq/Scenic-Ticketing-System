@@ -179,6 +179,93 @@
   justify-content: flex-end;
 }
 
+.orders-login-state {
+  align-items: center;
+  background: linear-gradient(145deg, #f3fbfa 0%, #ffffff 68%);
+  border: 1px solid #cfe8e5;
+  border-radius: 16px;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  overflow: hidden;
+  padding: 32px 20px 24px;
+  position: relative;
+  text-align: center;
+}
+
+.orders-login-state::before {
+  background: rgba(0, 139, 132, 0.07);
+  border-radius: 50%;
+  content: '';
+  height: 150px;
+  left: 50%;
+  position: absolute;
+  top: -105px;
+  transform: translateX(-50%);
+  width: 150px;
+}
+
+.orders-login-state-icon {
+  align-items: center;
+  background: #dff3f0;
+  border: 1px solid #bee4df;
+  border-radius: 50%;
+  color: #008b84;
+  display: inline-flex;
+  font-size: 24px;
+  height: 56px;
+  justify-content: center;
+  position: relative;
+  width: 56px;
+}
+
+.orders-login-state-copy {
+  display: grid;
+  gap: 7px;
+  max-width: 360px;
+  min-width: 0;
+}
+
+.orders-login-state-copy h2,
+.orders-login-state-copy p {
+  margin: 0;
+}
+
+.orders-login-state-copy h2 {
+  color: #143c3b;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.orders-login-state-copy p {
+  color: #657680;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+
+.orders-login-state-primary,
+.orders-login-state-secondary {
+  max-width: 320px;
+  width: 100%;
+}
+
+.orders-login-state-primary {
+  font-weight: 800;
+}
+
+.orders-login-state-secondary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.orders-login-state-secondary .ant-btn {
+  border-color: #d7e5e4;
+  color: #405b5a;
+  width: 100%;
+}
+
 .orders-table {
   max-width: 100%;
   min-width: 0;
@@ -247,6 +334,7 @@
 }
 
 .order-mobile-card.is-cancelled,
+.order-mobile-card.is-refunded,
 .order-mobile-card.is-readonly {
   background: #f7f9fa;
   border-color: #dce3ea;
@@ -410,6 +498,7 @@
 }
 
 .order-mobile-card.is-cancelled .order-mobile-card-action,
+.order-mobile-card.is-refunded .order-mobile-card-action,
 .order-mobile-card.is-readonly .order-mobile-card-action {
   background: #fff;
   border-color: #b8c4cf;
@@ -908,6 +997,14 @@
   filter: grayscale(0.85);
 }
 
+.visitor-shell-orders .order-mobile-card.is-refunded .order-mobile-card-art {
+  background:
+    linear-gradient(180deg, rgba(245, 247, 248, 0.2), rgba(68, 83, 92, 0.28)),
+    url('/admin-login-landscape.png') center 74% / cover no-repeat;
+  border-color: rgba(68, 83, 92, 0.18);
+  filter: grayscale(0.55);
+}
+
 .visitor-shell-orders .order-mobile-ticket {
   color: #102a43;
   font-size: 17px;
@@ -1164,8 +1261,45 @@
     display: none;
   }
 
-  .visitor-shell-orders .orders-status-filter .ant-segmented-item {
+  .visitor-shell-orders .orders-status-filter {
+    background: #edf5f4;
+    border: 1px solid #d7e7e5;
+    border-radius: 12px;
+    box-shadow: inset 0 1px 2px rgba(10, 75, 73, 0.05);
+    display: block;
+    padding: 4px;
+    width: 100%;
+  }
+
+  .visitor-shell-orders .orders-status-filter .ant-segmented-group {
+    display: grid;
+    gap: 2px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .visitor-shell-orders .orders-status-filter .ant-segmented-item,
+  .visitor-shell-orders .orders-status-filter .ant-segmented-thumb {
+    border: 0;
+    border-radius: 9px;
     min-width: 0;
+  }
+
+  .visitor-shell-orders .orders-status-filter .ant-segmented-item {
+    width: 100%;
+  }
+
+  .visitor-shell-orders .orders-status-filter .ant-segmented-item-selected {
+    background: #008b84;
+    box-shadow: 0 4px 10px rgba(0, 112, 106, 0.2);
+  }
+
+  .visitor-shell-orders .orders-status-filter .ant-segmented-item-label {
+    align-items: center;
+    display: flex;
+    font-size: 15px;
+    justify-content: center;
+    min-height: 42px;
+    padding-inline: 2px;
   }
 
   .visitor-shell-orders .orders-filter-tools {
@@ -1268,42 +1402,6 @@
     border: 1px solid #e3ecef;
     border-radius: 8px;
     padding: 12px;
-  }
-
-  .orders-status-filter {
-    background: transparent;
-    display: block;
-    width: 100%;
-  }
-
-  .orders-status-filter .ant-segmented-group {
-    display: grid;
-    gap: 8px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .orders-status-filter .ant-segmented-item {
-    border: 1px solid #dce3ea;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .orders-status-filter .ant-segmented-thumb {
-    border-radius: 8px;
-    box-shadow: none;
-  }
-
-  .orders-status-filter .ant-segmented-item-selected {
-    background: #008b84;
-  }
-
-  .orders-status-filter .ant-segmented-item-selected .ant-segmented-item-label {
-    color: #fff;
-  }
-
-  .orders-status-filter .ant-segmented-item-label {
-    min-height: 38px;
-    padding-inline: 4px;
   }
 
   .orders-filter-tools {

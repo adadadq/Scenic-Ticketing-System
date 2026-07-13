@@ -175,11 +175,13 @@ export async function runSharedApiTypeContracts() {
     totalAmount: { optional: false, type: 'string' },
     payableAmount: { optional: false, type: 'string' },
     orderTime: { optional: false, type: 'string' },
+    canSelfRefund: { optional: false, type: 'boolean' },
+    refundDeadline: { optional: true, type: 'string' },
     items: { optional: false, type: 'OrderItemMe[]' },
   })
   assertTypeAliasText(types.sourceFile, 'OrderSummary', 'OrderMe')
   assertTypeAliasText(types.sourceFile, 'MyOrderDetail', 'OrderMe')
-  assertStringLiteralUnion(types.sourceFile, 'OrderStatusFilter', ['CREATED', 'PAID', 'CANCELLED'])
+  assertStringLiteralUnion(types.sourceFile, 'OrderStatusFilter', ['CREATED', 'PAID', 'CANCELLED', 'REFUNDED'])
   assertStringLiteralUnion(types.sourceFile, 'AdminOrderStatusFilter', ['CREATED', 'PAID', 'CANCELLED', 'COMPLETED', 'REFUNDING', 'REFUNDED'])
   assertStringLiteralUnion(types.sourceFile, 'AdminPaymentStatusFilter', ['UNPAID', 'PAID', 'PARTIAL_REFUND', 'REFUNDED', 'FAILED'])
   assertExactPropertyContract(types.sourceFile, 'AdminOrderListParams', {

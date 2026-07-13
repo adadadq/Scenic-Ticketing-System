@@ -17,6 +17,7 @@ import { useOrderActions } from './useOrderActions'
 import { statusFilterOptions, useOrdersSelection } from './useOrdersSelection'
 
 type OrdersWorkbenchProps = {
+  initialOrderNo?: string
   onOpenAuth?: () => void
   onOpenBooking?: () => void
   onOpenService?: () => void
@@ -29,8 +30,8 @@ const serviceItems = [
   { icon: <CustomerServiceOutlined />, title: '优质服务', text: '7×12小时 · 贴心服务' },
 ]
 
-export function OrdersWorkbench({ onOpenAuth, onOpenBooking, onOpenService }: OrdersWorkbenchProps) {
-  const ordersSelection = useOrdersSelection()
+export function OrdersWorkbench({ initialOrderNo, onOpenAuth, onOpenBooking, onOpenService }: OrdersWorkbenchProps) {
+  const ordersSelection = useOrdersSelection(initialOrderNo)
   const {
     clearOrderFilters,
     filteredOrders,

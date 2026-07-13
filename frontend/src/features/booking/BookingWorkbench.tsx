@@ -43,6 +43,7 @@ import { useBookingSelection, visitDateOptions } from './useBookingSelection'
 
 type BookingWorkbenchProps = {
   onOpenAuth?: (mode: BookingAuthMode) => void
+  onOrderCreated?: (orderNo: string) => void
   onOpenOrders?: () => void
   onOpenService?: () => void
 }
@@ -54,7 +55,7 @@ const bookingStepItems = [
   { title: '支付订单', content: '完成支付' },
 ]
 
-export function BookingWorkbench({ onOpenAuth, onOpenOrders, onOpenService }: BookingWorkbenchProps) {
+export function BookingWorkbench({ onOpenAuth, onOpenOrders, onOpenService, onOrderCreated }: BookingWorkbenchProps) {
   const bookingSelection = useBookingSelection()
   const sessionQuery = useVisitorSessionQuery()
   const createOrderMutation = useCreateOrderMutation()
@@ -105,10 +106,11 @@ export function BookingWorkbench({ onOpenAuth, onOpenOrders, onOpenService }: Bo
   const submitHint = getBookingSubmitHint(bookingGateState)
   const readinessItems = getBookingReadinessItems(bookingGateState)
   const primaryActionLabel = getPrimaryActionLabel(authRequiredMode, sessionQuery.isLoading)
-  const mobileActionLabel = getMobileActionLabel(authRequiredMode, sessionQuery.isLoading)
   const isFallbackCatalogMode = usesProductFallback || usesTimeSlotFallback
   const primaryActionDisabled = isFallbackCatalogMode || (!authRequiredMode && !canCreateOrder)
   const currentStep = getBookingStepIndex(bookingGateState)
+  const mobileActionLabel = getMobileActionLabel(authRequiredMode, sessionQuery.isLoading, currentStep)
+  const mobileActionDisabled = isFallbackCatalogMode || sessionQuery.isLoading
   const currentStepLabel = bookingStepItems[currentStep].title
 
   useEffect(() => {
@@ -139,11 +141,19 @@ export function BookingWorkbench({ onOpenAuth, onOpenOrders, onOpenService }: Bo
     createOrderMutation.mutate(
       orderRequest,
       {
-        onSuccess: () => {
-          onOpenOrders?.()
+        onSuccess: (order) => {
+          if (onOrderCreated) {
+            onOrderCreated(order.orderNo)
+          } else {
+            onOpenOrders?.()
+          }
         },
       },
     )
+  }
+
+  function scrollToBookingSection(selector: string) {
+    document.querySelector(selector)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function handlePrimaryAction() {
@@ -153,6 +163,34 @@ export function BookingWorkbench({ onOpenAuth, onOpenOrders, onOpenService }: Bo
 
     if (authRequiredMode) {
       onOpenAuth?.(authRequiredMode)
+      return
+    }
+
+    createPendingOrder()
+  }
+
+  function handleMobilePrimaryAction() {
+    if (isFallbackCatalogMode || sessionQuery.isLoading) {
+      return
+    }
+
+    if (authRequiredMode) {
+      onOpenAuth?.(authRequiredMode)
+      return
+    }
+
+    if (currentStep === 0) {
+      scrollToBookingSection('.booking-selector-card')
+      return
+    }
+
+    if (currentStep === 1) {
+      scrollToBookingSection('.booking-slot-card')
+      return
+    }
+
+    if (currentStep === 2) {
+      scrollToBookingSection('.booking-passenger-card')
       return
     }
 
@@ -226,10 +264,10 @@ export function BookingWorkbench({ onOpenAuth, onOpenOrders, onOpenService }: Bo
       </Row>
 
       <BookingMobileActionBar
-        disabled={primaryActionDisabled}
+        disabled={mobileActionDisabled}
         isLoading={createOrderMutation.isPending}
         label={mobileActionLabel}
-        onPrimaryAction={handlePrimaryAction}
+        onPrimaryAction={handleMobilePrimaryAction}
         selectedTicketName={selectedTicketSummary}
         totalAmount={totalAmount}
       />

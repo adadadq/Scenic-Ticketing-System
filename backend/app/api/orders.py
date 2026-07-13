@@ -4,7 +4,7 @@ from app.core.errors import AppError
 from app.core.responses import success_response
 from app.core.security import require_double_submit_csrf
 from app.schemas.common import ApiSuccessDTO
-from app.schemas.orders import OrderCreateRequest, OrderMeDTO
+from app.schemas.orders import OrderCreateRequest, OrderMeDTO, VisitorRefundRequest
 from app.services.orders import OrderService, get_order_service
 
 router = APIRouter(tags=["orders"])
@@ -89,4 +89,20 @@ def cancel_order(
 ) -> dict:
     require_double_submit_csrf(request)
     order = order_service.cancel_order(order_no, request)
+    return success_response(request, order.model_dump(by_alias=True, exclude_none=True, mode="json"))
+
+
+@router.post(
+    "/api/orders/{order_no}/refund",
+    response_model=ApiSuccessDTO[OrderMeDTO],
+    response_model_exclude_none=True,
+)
+def refund_order(
+    order_no: str,
+    payload: VisitorRefundRequest,
+    request: Request,
+    order_service: OrderService = Depends(get_order_service),
+) -> dict:
+    require_double_submit_csrf(request)
+    order = order_service.refund_order(order_no, payload, request)
     return success_response(request, order.model_dump(by_alias=True, exclude_none=True, mode="json"))

@@ -15,6 +15,10 @@
   padding: 20px 14px;
 }
 
+.visitor-mobile-nav-trigger {
+  display: none;
+}
+
 .visitor-sider {
   background:
     linear-gradient(180deg, rgba(0, 139, 132, 0.96) 0%, rgba(0, 92, 89, 0.98) 56%, #05524f 100%) !important;
@@ -540,7 +544,8 @@
   width: 100%;
 }
 
-.visitor-auth-modal .ant-modal-content {
+.visitor-auth-modal .ant-modal-content,
+.visitor-auth-modal .ant-modal-container {
   border: 1px solid rgba(220, 227, 234, 0.88);
   border-radius: 8px;
   box-shadow: 0 24px 64px rgba(15, 79, 76, 0.18);
@@ -771,11 +776,7 @@
   }
 }
 
-@media (max-width: 768px) {
-  .app-shell {
-    overflow-x: clip;
-  }
-
+@media (max-width: 991px) {
   .app-sider {
     bottom: 0;
     left: 0;
@@ -793,6 +794,32 @@
     width: 100%;
   }
 
+  .visitor-shell .visitor-header {
+    padding-left: 64px;
+  }
+
+  .visitor-mobile-nav-trigger.ant-btn {
+    align-items: center;
+    border-radius: 8px;
+    display: inline-flex;
+    font-size: 20px;
+    height: 44px;
+    justify-content: center;
+    left: 8px;
+    min-width: 44px;
+    padding: 0;
+    position: fixed;
+    top: 6px;
+    width: 44px;
+    z-index: 30;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    overflow-x: clip;
+  }
+
   .app-header {
     align-items: flex-start;
     flex-direction: column;
@@ -801,11 +828,27 @@
   }
 
   .visitor-shell-booking .visitor-header {
-    background: rgba(255, 255, 255, 0.94);
-    border-bottom: 1px solid #e5edf3;
-    padding: 12px 16px;
-    position: sticky;
-    top: 0;
+    align-items: center;
+    background: transparent;
+    border-bottom: 0;
+    flex-direction: row;
+    height: 42px;
+    justify-content: flex-end;
+    min-height: 0;
+    padding: 0;
+    position: absolute;
+    right: 16px;
+    top: 18px;
+    width: auto;
+  }
+
+  .visitor-shell-booking .auth-status .ant-btn {
+    height: 42px;
+    min-width: 96px;
+  }
+
+  .visitor-shell-booking .visitor-content {
+    padding: 0 16px 22px;
   }
 
   .status-strip {
@@ -832,7 +875,8 @@
     width: 100vw !important;
   }
 
-  .visitor-auth-modal .ant-modal-content {
+  .visitor-auth-modal .ant-modal-content,
+  .visitor-auth-modal .ant-modal-container {
     border-radius: 18px 18px 0 0;
     max-height: calc(100vh - 24px);
     overflow-y: auto;
@@ -885,8 +929,12 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .app-content {
+    padding-bottom: 112px;
+  }
+
+  .visitor-shell-booking .visitor-content {
     padding-bottom: 112px;
   }
 

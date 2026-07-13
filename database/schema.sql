@@ -235,7 +235,9 @@ CREATE TABLE refund_audit_log (
     refunded_item_count INTEGER NOT NULL CHECK (refunded_item_count > 0),
     refunded_item_nos JSONB NOT NULL,
     reason VARCHAR(100),
-    operator_admin_user_id BIGINT NOT NULL REFERENCES admin_user(id),
+    operator_type VARCHAR(20) NOT NULL,
+    operator_admin_user_id BIGINT REFERENCES admin_user(id),
+    operator_visitor_id BIGINT REFERENCES visitor(id),
     operator_username VARCHAR(64) NOT NULL,
     operator_display_name VARCHAR(100) NOT NULL,
     request_id VARCHAR(64),
@@ -244,7 +246,12 @@ CREATE TABLE refund_audit_log (
     admin_session_id BIGINT,
     user_agent VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT ck_refund_audit_log_type CHECK (refund_type IN ('FULL', 'PARTIAL'))
+    CONSTRAINT ck_refund_audit_log_type CHECK (refund_type IN ('FULL', 'PARTIAL')),
+    CONSTRAINT ck_refund_audit_log_operator_type CHECK (operator_type IN ('ADMIN', 'VISITOR')),
+    CONSTRAINT ck_refund_audit_log_operator CHECK (
+        (operator_type = 'ADMIN' AND operator_admin_user_id IS NOT NULL AND operator_visitor_id IS NULL)
+        OR (operator_type = 'VISITOR' AND operator_admin_user_id IS NULL AND operator_visitor_id IS NOT NULL)
+    )
 );
 
 CREATE TABLE check_in_audit_log (
@@ -438,6 +445,7 @@ CREATE UNIQUE INDEX uq_payment_record_mockpay_event_idempotency
     WHERE idempotency_key LIKE 'mockpay:%';
 CREATE INDEX idx_refund_audit_log_order_created ON refund_audit_log (order_id, created_at DESC);
 CREATE INDEX idx_refund_audit_log_created ON refund_audit_log (created_at DESC);
+CREATE INDEX idx_refund_audit_log_visitor_created ON refund_audit_log (operator_visitor_id, created_at DESC);
 CREATE INDEX idx_check_in_audit_log_ticket_created ON check_in_audit_log (ticket_code, created_at DESC);
 CREATE INDEX idx_check_in_audit_log_order_created ON check_in_audit_log (order_id, created_at DESC);
 CREATE INDEX idx_check_in_audit_log_created ON check_in_audit_log (created_at DESC);

@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -9,9 +9,11 @@ from app.core.security import hash_secret
 from app.main import create_app
 from app.repositories.auth import SessionVisitorRecord, VisitorRecord, get_auth_repository
 from app.repositories.orders import (
+    AdminRefundAuditInput,
     OrderCancelStateError,
     OrderCreateItemRecord,
     OrderRecord,
+    OrderRefundDeadlinePassedError,
     PostgresOrderRepository,
     get_order_repository,
 )
@@ -49,12 +51,19 @@ class FakeMyOrdersRepository:
                 payment_status="PAID",
                 item_status="UNUSED",
                 ticket_code="TKRANDOMABC123",
+                visit_date=date.today() + timedelta(days=2),
             ),
             "O-OTHER": self.order("O-OTHER", visitor_id=2, status="CREATED", payment_status="UNPAID"),
         }
         self.quota_sold = 0
 
-    def item(self, item_no: str, item_status: str = "PENDING_PAYMENT", ticket_code: str | None = None) -> OrderCreateItemRecord:
+    def item(
+        self,
+        item_no: str,
+        item_status: str = "PENDING_PAYMENT",
+        ticket_code: str | None = None,
+        visit_date: date = date(2026, 7, 1),
+    ) -> OrderCreateItemRecord:
         return OrderCreateItemRecord(
             item_no=item_no,
             product_id=1,
@@ -62,7 +71,7 @@ class FakeMyOrdersRepository:
             product_name="金龙桥至旧县成人票",
             ticket_name="遇龙河成人票",
             time_slot_id=100,
-            visit_date=date(2026, 7, 1),
+            visit_date=visit_date,
             slot_start_time=time(8, 30),
             slot_end_time=time(10, 30),
             original_price=Decimal("168.00"),
@@ -79,6 +88,7 @@ class FakeMyOrdersRepository:
         payment_status: str,
         item_status: str = "PENDING_PAYMENT",
         ticket_code: str | None = None,
+        visit_date: date = date(2026, 7, 1),
     ) -> OrderRecord:
         return OrderRecord(
             order_id=len(order_no),
@@ -91,7 +101,14 @@ class FakeMyOrdersRepository:
             total_amount=Decimal("128.00"),
             payable_amount=Decimal("128.00"),
             order_time=datetime(2026, 7, 1, 9, 0, tzinfo=UTC),
-            items=[self.item(f"I-{order_no}", item_status=item_status, ticket_code=ticket_code)],
+            items=[
+                self.item(
+                    f"I-{order_no}",
+                    item_status=item_status,
+                    ticket_code=ticket_code,
+                    visit_date=visit_date,
+                )
+            ],
         )
 
     def list_orders_for_visitor(self, visitor_id: int, order_status: str | None = None) -> list[OrderRecord]:
@@ -145,6 +162,31 @@ class FakeMyOrdersRepository:
         )
         self.orders[order_no] = cancelled
         return cancelled
+
+    def refund_order(
+        self,
+        order_no: str,
+        audit: AdminRefundAuditInput,
+        visitor_id: int | None = None,
+        refund_now: datetime | None = None,
+    ):
+        order = self.orders.get(order_no)
+        if order is None or (visitor_id is not None and order.visitor_id != visitor_id):
+            return None
+        refunded_items = [
+            OrderCreateItemRecord(**{**item.__dict__, "item_status": "REFUNDED"})
+            for item in order.items
+        ]
+        self.orders[order_no] = OrderRecord(
+            **{
+                **order.__dict__,
+                "order_status": "REFUNDED",
+                "payment_status": "REFUNDED",
+                "items": refunded_items,
+            }
+        )
+        self.last_refund_audit = audit
+        return object()
 
 
 def registered_visitor(visitor_id: int = 1) -> VisitorRecord:
@@ -350,6 +392,44 @@ def test_paid_order_detail_includes_ticket_code_and_time_amount_status_fields():
     assert item["slotEndTime"] == "10:30:00"
     assert item["finalPrice"] == "128.00"
     assert item["itemStatus"] == "UNUSED"
+    assert response.json()["data"]["canSelfRefund"] is True
+    assert response.json()["data"]["refundDeadline"]
+
+
+def test_visitor_can_refund_own_paid_unused_order_with_csrf():
+    order_repo = FakeMyOrdersRepository()
+    client = build_client(FakeAuthRepository(registered_visitor()), order_repo)
+
+    response = client.post(
+        "/api/orders/O-PAID/refund",
+        headers=csrf_headers(client) | {"x-request-id": "req-visitor-refund"},
+        json={"reason": "行程变更"},
+    )
+
+    data = response.json()["data"]
+    assert response.status_code == 200
+    assert data["orderStatus"] == "REFUNDED"
+    assert data["paymentStatus"] == "REFUNDED"
+    assert data["canSelfRefund"] is False
+    assert order_repo.last_refund_audit.operator_type == "VISITOR"
+    assert order_repo.last_refund_audit.operator_visitor_id == 1
+
+
+def test_visitor_refund_hides_other_visitors_order_and_requires_csrf():
+    order_repo = FakeMyOrdersRepository()
+    client = build_client(FakeAuthRepository(registered_visitor()), order_repo)
+
+    other = client.post(
+        "/api/orders/O-OTHER/refund",
+        headers=csrf_headers(client),
+        json={},
+    )
+    missing_csrf = client.post("/api/orders/O-PAID/refund", json={})
+
+    assert other.status_code == 404
+    assert other.json()["code"] == "ORDER_NOT_FOUND"
+    assert missing_csrf.status_code == 403
+    assert missing_csrf.json()["code"] == "CSRF_INVALID"
 
 
 @pytest.mark.parametrize(
@@ -543,3 +623,53 @@ def test_postgres_cancel_rejects_failed_payment_status_before_updates(monkeypatc
     assert "UPDATE ticket_order_item" not in queries
     assert "UPDATE ticket_order" not in queries
     assert "UPDATE time_slot_quota" not in queries
+
+
+def test_postgres_visitor_refund_scopes_lock_to_owner(monkeypatch):
+    connection = ScriptedConnection(results=[None])
+    monkeypatch.setattr(order_repository_module, "connect_db", lambda: connection)
+
+    result = PostgresOrderRepository().refund_order(
+        "O-OTHER",
+        AdminRefundAuditInput(None, "daye", "大爷", None, None, operator_type="VISITOR", operator_visitor_id=1),
+        visitor_id=1,
+        refund_now=datetime.now(UTC),
+    )
+
+    assert result is None
+    assert "AND visitor_id = %s" in connection.queries[0][0]
+    assert connection.queries[0][1] == ("O-OTHER", 1)
+
+
+def test_postgres_visitor_refund_rejects_after_deadline_before_payment_or_inventory_updates(monkeypatch):
+    order_row = {
+        "order_id": 1,
+        "order_no": "O-PAID",
+        "order_status": "PAID",
+        "payment_status": "PAID",
+        "paid_amount": Decimal("128.00"),
+    }
+    item_rows = [{
+        "order_item_id": 10,
+        "item_no": "I001",
+        "item_status": "UNUSED",
+        "time_slot_id": 100,
+        "visit_date": date.today(),
+        "final_price": Decimal("128.00"),
+    }]
+    connection = ScriptedConnection(results=[order_row, item_rows])
+    monkeypatch.setattr(order_repository_module, "connect_db", lambda: connection)
+
+    with pytest.raises(OrderRefundDeadlinePassedError):
+        PostgresOrderRepository().refund_order(
+            "O-PAID",
+            AdminRefundAuditInput(None, "daye", "大爷", None, None, operator_type="VISITOR", operator_visitor_id=1),
+            visitor_id=1,
+            refund_now=datetime.now(UTC),
+        )
+
+    queries = "\n".join(query for query, _params in connection.queries)
+    assert len(connection.queries) == 2
+    assert "UPDATE payment_record" not in queries
+    assert "UPDATE time_slot_quota" not in queries
+    assert "INSERT INTO refund_audit_log" not in queries

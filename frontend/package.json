@@ -9,8 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test:contract": "node scripts/api-contract-smoke.mjs",
-    "test:e2e": "node scripts/e2e-smoke.mjs",
-    "test:e2e:real": "E2E_API_BASE_URL=http://127.0.0.1:8000 node scripts/e2e-smoke.mjs",
+    "test:e2e": "E2E_VISITOR_ONLY=1 node scripts/e2e-smoke.mjs",
+    "test:e2e:real": "E2E_VISITOR_ONLY=1 E2E_API_BASE_URL=http://127.0.0.1:8000 node scripts/e2e-smoke.mjs",
     "verify": "npm run lint && npm run test:contract && npm run test:e2e && npm run build"
   },
   "dependencies": {

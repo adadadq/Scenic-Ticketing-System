@@ -53,6 +53,17 @@ async function openAdminSidePage(client, label) {
   assert(clicked, `admin side navigation should open ${label}`)
 }
 
+async function fillBookingPassengers(client) {
+  await waitFor(client, `document.querySelectorAll('.passenger-line').length > 0`, 'booking passenger fields')
+  const passengerCount = await evaluate(client, `document.querySelectorAll('.passenger-line').length`)
+
+  for (let index = 1; index <= passengerCount; index += 1) {
+    await fillSelector(client, `.passenger-line:nth-child(${index}) input[placeholder="姓名"]`, `出行人${index}`)
+    await fillSelector(client, `.passenger-line:nth-child(${index}) input[placeholder="身份证号"]`, `11010119900101001${index}`)
+    await fillSelector(client, `.passenger-line:nth-child(${index}) input[placeholder="手机号"]`, `1391111222${index}`)
+  }
+}
+
 async function run() {
   await withE2eHarness({
     chromePath,
@@ -114,6 +125,7 @@ async function run() {
     let adminShellState = null
     let adminTabletState = null
     let bookingStepState = null
+    let mobileBookingNextState = null
     if (mock) {
       await waitFor(
         client,
@@ -143,16 +155,30 @@ async function run() {
     const mobileTicketCardState = await evaluate(
       client,
       `(() => {
-        const card = document.querySelector('.ticket-card')
-        const title = document.querySelector('.ticket-card-title')
+        const card = document.querySelector('.ticket-card.active') ?? document.querySelector('.ticket-card')
+        const badge = card?.querySelector('.ticket-card-radio')
+        const content = card?.querySelector('.ticket-card-main')
+        const price = card?.querySelector('.ticket-card-price')
+        const title = card?.querySelector('.ticket-card-title')
+        const badgeRect = badge?.getBoundingClientRect()
+        const contentRect = content?.getBoundingClientRect()
+        const priceRect = price?.getBoundingClientRect()
         const titleRect = title?.getBoundingClientRect()
         const lineHeight = title ? Number.parseFloat(getComputedStyle(title).lineHeight) : 0
         return {
+          badgeContent: badge ? getComputedStyle(badge, '::after').content : '',
           cardClientWidth: card?.clientWidth ?? 0,
           cardScrollWidth: card?.scrollWidth ?? 0,
+          contentWidth: contentRect?.width ?? 0,
+          priceBadgeOverlap: Boolean(
+            badgeRect && priceRect &&
+            badgeRect.left < priceRect.right && badgeRect.right > priceRect.left &&
+            badgeRect.top < priceRect.bottom && badgeRect.bottom > priceRect.top
+          ),
           text: title?.textContent ?? '',
           titleAttribute: title?.getAttribute('title') ?? '',
           hasFullTitle: Boolean(title?.textContent && title.getAttribute('title') === title.textContent),
+          titleWidth: titleRect?.width ?? 0,
           titleLineCount: lineHeight && titleRect ? Math.round(titleRect.height / lineHeight) : 0,
         }
       })()`,
@@ -178,35 +204,169 @@ async function run() {
         const bar = document.querySelector('.mobile-action-bar')
         const action = document.querySelector('.mobile-action-bar button')
         const heading = document.querySelector('.booking-heading')
+        const slots = document.querySelector('.slot-grid')
+        const steps = document.querySelector('.booking-step-card')
         const summary = document.querySelector('.booking-summary-card')
+        const trigger = document.querySelector('.visitor-mobile-nav-trigger')
+        const mobilePassengerTrigger = document.querySelector('.mobile-passenger-template-trigger')
+        const passengerHeaderTrigger = document.querySelector('.passenger-template-header-trigger')
         const actionRect = action?.getBoundingClientRect()
+        const stepsRect = steps?.getBoundingClientRect()
+        const stepsBody = document.querySelector('.booking-step-card .ant-card-body')
+        const triggerRect = trigger?.getBoundingClientRect()
+        const triggerHit = triggerRect
+          ? document.elementFromPoint(triggerRect.left + triggerRect.width / 2, triggerRect.top + triggerRect.height / 2)
+          : null
         return {
           actionWidth: actionRect?.width ?? 0,
           hasBookingHeading: Boolean(heading),
           hidesDesktopSummary: summary ? getComputedStyle(summary).display === 'none' : false,
+          hidesPassengerHeaderTrigger: passengerHeaderTrigger ? getComputedStyle(passengerHeaderTrigger).display === 'none' : false,
+          mobilePassengerTriggerVisible: mobilePassengerTrigger ? getComputedStyle(mobilePassengerTrigger).display !== 'none' : false,
           pageFits: document.documentElement.scrollWidth === document.documentElement.clientWidth,
+          slotColumnCount: slots ? getComputedStyle(slots).gridTemplateColumns.split(' ').length : 0,
+          stepsClientWidth: stepsBody?.clientWidth ?? 0,
+          stepsHeight: stepsRect?.height ?? 0,
+          stepsScrollWidth: stepsBody?.scrollWidth ?? 0,
+          visibleStepTitleCount: [...document.querySelectorAll('.booking-steps .ant-steps-item-title')]
+            .filter((title) => getComputedStyle(title).display !== 'none' && title.textContent.trim()).length,
           stickyBarVisible: bar ? getComputedStyle(bar).display === 'grid' : false,
+          triggerInsideTopBar: Boolean(
+            triggerRect && triggerRect.width >= 44 && triggerRect.height >= 44 &&
+            triggerRect.top >= 0 && triggerRect.left >= 0 &&
+            triggerRect.right <= window.innerWidth && triggerRect.bottom <= 72 &&
+            triggerHit && (triggerHit === trigger || trigger.contains(triggerHit))
+          ),
+          triggerIsButton: trigger?.tagName === 'BUTTON',
         }
       })()`,
     )
+    if (mock) {
+      await clickSelector(client, '.mobile-passenger-template-trigger')
+      await waitFor(
+        client,
+        `(() => {
+          ${visibleElementScript}
+          return [...document.querySelectorAll('.ant-modal-title')]
+            .some((title) => isVisible(title) && title.textContent.includes('常用出行人'))
+        })()`,
+        'mobile passenger manager modal',
+      )
+      mobileBookingVisualState.passengerManagerOpens = true
+      const passengerManagerClosed = await evaluate(
+        client,
+        `(() => {
+          ${visibleElementScript}
+          const modal = [...document.querySelectorAll('.ant-modal')]
+            .find((item) => isVisible(item) && item.textContent.includes('常用出行人'))
+          const closeButton = modal?.querySelector('.ant-modal-close')
+          if (!closeButton) return false
+          closeButton.click()
+          return true
+        })()`,
+      )
+      assert(passengerManagerClosed, 'mobile passenger manager should have a close action')
+      await waitFor(
+        client,
+        `(() => {
+          ${visibleElementScript}
+          return ![...document.querySelectorAll('.ant-modal-title')]
+            .some((title) => isVisible(title) && title.textContent.includes('常用出行人'))
+        })()`,
+        'closed mobile passenger manager modal',
+      )
+    }
+    await waitFor(
+      client,
+      `document.querySelector('.visitor-mobile-nav-trigger')?.getAttribute('aria-expanded') === 'false'`,
+      'collapsed mobile visitor navigation',
+    )
+    await clickSelector(client, '.visitor-mobile-nav-trigger')
+    await waitFor(
+      client,
+      `document.querySelector('.visitor-mobile-nav-trigger')?.getAttribute('aria-expanded') === 'true' &&
+        document.querySelector('.visitor-sider')?.getBoundingClientRect().width >= 250`,
+      'expanded mobile visitor navigation',
+    )
+    visitorShellState.mobileNavigationExpands = true
+    await clickSelector(client, '.visitor-mobile-nav-trigger')
+    await waitFor(
+      client,
+      `document.querySelector('.visitor-mobile-nav-trigger')?.getAttribute('aria-expanded') === 'false' &&
+        document.querySelector('.visitor-sider')?.getBoundingClientRect().width <= 1`,
+      'closed mobile visitor navigation',
+    )
+    visitorShellState.mobileNavigationCloses = true
+
+    const bookingBreakpointStates = []
+    for (const width of [430, 640, 768, 900, 1230, 1440]) {
+      await client.send('Emulation.setDeviceMetricsOverride', {
+        deviceScaleFactor: 1,
+        height: 900,
+        mobile: width < 640,
+        width,
+      })
+      await waitFor(client, `window.innerWidth === ${width}`, `booking ${width}px viewport`)
+      bookingBreakpointStates.push(await evaluate(
+        client,
+        `(() => {
+          const bar = document.querySelector('.mobile-action-bar')
+          const slots = document.querySelector('.slot-grid')
+          const steps = document.querySelector('.booking-step-card')
+          const summary = document.querySelector('.booking-summary-card')
+          const title = document.querySelector('.ticket-card-title')
+          const trigger = document.querySelector('.visitor-mobile-nav-trigger')
+          const mobilePassengerTrigger = document.querySelector('.mobile-passenger-template-trigger')
+          const passengerHeaderTrigger = document.querySelector('.passenger-template-header-trigger')
+          return {
+            mobileBarDisplay: bar ? getComputedStyle(bar).display : '',
+            mobilePassengerTriggerDisplay: mobilePassengerTrigger ? getComputedStyle(mobilePassengerTrigger).display : '',
+            pageFits: document.documentElement.scrollWidth === document.documentElement.clientWidth,
+            passengerHeaderTriggerDisplay: passengerHeaderTrigger ? getComputedStyle(passengerHeaderTrigger).display : '',
+            slotColumnCount: slots ? getComputedStyle(slots).gridTemplateColumns.split(' ').length : 0,
+            stepsHeight: steps?.getBoundingClientRect().height ?? 0,
+            summaryDisplay: summary ? getComputedStyle(summary).display : '',
+            ticketTitleWidth: title?.getBoundingClientRect().width ?? 0,
+            triggerDisplay: trigger ? getComputedStyle(trigger).display : '',
+            width: window.innerWidth,
+          }
+        })()`,
+      ))
+    }
+    await client.send('Emulation.setDeviceMetricsOverride', {
+      deviceScaleFactor: 1,
+      height: viewport.height,
+      mobile: true,
+      width: viewport.width,
+    })
+    await waitFor(client, `window.innerWidth === ${viewport.width}`, 'restored mobile booking viewport')
     let loggedOutOrdersState = null
     let emptyOrdersState = null
     if (mock) {
       await clickByText(client, '我的订单')
       await waitFor(client, `document.querySelector('.page-heading h1')?.textContent.includes('我的订单')`, 'logged-out orders page')
-      await waitFor(client, includesText('请先登录后查看订单'), 'logged-out orders auth error')
+      await waitFor(client, includesText('登录后查看订单'), 'logged-out orders auth error')
       loggedOutOrdersState = await evaluate(
         client,
-        `(() => ({
+        `(() => {
+          const loginState = document.querySelector('.orders-login-state')
+          const loginTitle = loginState?.querySelector('h2')
+          const loginStateRect = loginState?.getBoundingClientRect()
+          const loginTitleRect = loginTitle?.getBoundingClientRect()
+          return {
           canOpenLogin: [...document.querySelectorAll('button')].some((button) =>
-            button.textContent.includes('去登录') && !button.disabled
+            button.textContent.includes('立即登录') && !button.disabled
           ),
           canReturnBooking: [...document.querySelectorAll('button')].some((button) =>
             button.textContent.includes('返回购票') && !button.disabled
           ),
-          hasAuthError: document.body.textContent.includes('请先登录后查看订单'),
+          hasAuthError: document.body.textContent.includes('登录后查看订单'),
           hasEmptyText: document.body.textContent.includes('暂无订单'),
-        }))()`,
+          hasFilters: Boolean(document.querySelector('.orders-toolbar')),
+          fitsViewport: Boolean(loginStateRect && loginStateRect.left >= 0 && loginStateRect.right <= innerWidth),
+          titleIsHorizontal: Boolean(loginTitleRect && loginTitleRect.width > loginTitleRect.height * 2),
+          }
+        })()`,
       )
       await clickByText(client, '返回购票')
       await waitFor(client, `document.querySelector('.page-heading h1')?.textContent.includes('购买门票')`, 'booking page from logged-out orders')
@@ -214,6 +374,7 @@ async function run() {
 
     let desktopAuthActionState = null
     let desktopBookingVisualState = null
+    let mobileAuthModalState = null
     if (mock) {
       await client.send('Emulation.setDeviceMetricsOverride', {
         deviceScaleFactor: 1,
@@ -295,6 +456,34 @@ async function run() {
       )
       assert(mock.state.visitor === null, 'rate-limited login should not create a visitor session in mock mode')
       mock.state.rateLimitedLoginUsernames.delete(e2eUsername)
+
+      await client.send('Emulation.setDeviceMetricsOverride', {
+        deviceScaleFactor: 1,
+        height: viewport.height,
+        mobile: true,
+        width: viewport.width,
+      })
+      await waitFor(client, `window.innerWidth === ${viewport.width}`, 'mobile auth modal viewport')
+      mobileAuthModalState = await evaluate(
+        client,
+        `(() => {
+          const container = document.querySelector('.visitor-auth-modal .ant-modal-container')
+          const title = document.querySelector('.visitor-auth-modal .ant-modal-title')
+          const switcher = document.querySelector('.visitor-auth-modal .ant-segmented')
+          const containerRect = container?.getBoundingClientRect()
+          const titleRect = title?.getBoundingClientRect()
+          const switcherRect = switcher?.getBoundingClientRect()
+          return {
+            canScroll: Boolean(container && container.scrollHeight > container.clientHeight),
+            containerBottom: containerRect?.bottom ?? 0,
+            containerTop: containerRect?.top ?? 0,
+            overflowY: container ? getComputedStyle(container).overflowY : '',
+            switcherVisible: Boolean(switcherRect && switcherRect.top >= 0 && switcherRect.bottom <= window.innerHeight),
+            titleVisible: Boolean(titleRect && titleRect.top >= 0 && titleRect.bottom <= window.innerHeight),
+            viewportHeight: window.innerHeight,
+          }
+        })()`,
+      )
     }
 
     await clickSegmentedOption(client, '注册账号')
@@ -365,13 +554,66 @@ async function run() {
     if (mock) {
       await waitFor(
         client,
-        `document.querySelector('.booking-steps')?.getAttribute('data-current-step-label') === '支付订单'`,
+        `document.querySelector('.booking-steps')?.getAttribute('data-current-step-label') === '填写信息'`,
         'booking step after real-name',
       )
       bookingStepState.afterRegisterStep = await evaluate(
         client,
         `document.querySelector('.booking-steps')?.getAttribute('data-current-step-label') || ''`,
       )
+      mobileBookingNextState = await evaluate(
+        client,
+        `(() => {
+          const button = document.querySelector('.mobile-action-bar button')
+          return {
+            passengerActionEnabled: Boolean(button && !button.disabled),
+            passengerActionLabel: button?.textContent.trim() ?? '',
+          }
+        })()`,
+      )
+      assert(
+        mobileBookingNextState.passengerActionEnabled && mobileBookingNextState.passengerActionLabel.includes('填写出行人'),
+        `mobile booking should guide incomplete passenger details: ${JSON.stringify(mobileBookingNextState)}`,
+      )
+      await evaluate(
+        client,
+        `(() => {
+          const target = document.querySelector('.booking-passenger-card')
+          if (!target) return false
+          target.scrollIntoView = () => { document.documentElement.dataset.e2eScrollTarget = 'passenger' }
+          return true
+        })()`,
+      )
+      await clickSelector(client, '.mobile-action-bar button')
+      await waitFor(
+        client,
+        `document.documentElement.dataset.e2eScrollTarget === 'passenger'`,
+        'mobile passenger scroll guidance',
+      )
+      mobileBookingNextState.passengerScrollTarget = await evaluate(
+        client,
+        `document.documentElement.dataset.e2eScrollTarget ?? ''`,
+      )
+      await fillBookingPassengers(client)
+      await waitFor(
+        client,
+        `document.querySelector('.booking-steps')?.getAttribute('data-current-step-label') === '支付订单'`,
+        'booking step after passenger details',
+      )
+      bookingStepState.afterPassengersStep = await evaluate(
+        client,
+        `document.querySelector('.booking-steps')?.getAttribute('data-current-step-label') || ''`,
+      )
+      Object.assign(mobileBookingNextState, await evaluate(
+        client,
+        `(() => {
+          const button = document.querySelector('.mobile-action-bar button')
+          return {
+            readyActionEnabled: Boolean(button && !button.disabled),
+            readyActionLabel: button?.textContent.trim() ?? '',
+          }
+        })()`,
+      ))
     }
 
     let catalogFallbackState = null
@@ -420,6 +662,7 @@ async function run() {
       await waitFor(client, 'document.readyState === "complete"', 'booking page after time slot recovery')
     }
 
+    await fillBookingPassengers(client)
     await waitFor(client, enabledSelector('.mobile-action-bar button'), 'selectable product and time slot')
     let emptyTimeSlotsState = null
     if (mock) {
@@ -430,9 +673,29 @@ async function run() {
         `(() => ({
           createButtonDisabled: Boolean(document.querySelector('.mobile-action-bar button')?.disabled),
           hasEmptyTimeSlots: document.body.textContent.includes('当前日期暂无可预约时段，请换一天查看'),
+          nextActionLabel: document.querySelector('.mobile-action-bar button')?.textContent.trim() ?? '',
           scrollWidth: document.documentElement.scrollWidth,
           clientWidth: document.documentElement.clientWidth,
         }))()`,
+      )
+      await evaluate(
+        client,
+        `(() => {
+          const target = document.querySelector('.booking-slot-card')
+          if (!target) return false
+          target.scrollIntoView = () => { document.documentElement.dataset.e2eScrollTarget = 'slot' }
+          return true
+        })()`,
+      )
+      await clickSelector(client, '.mobile-action-bar button')
+      await waitFor(
+        client,
+        `document.documentElement.dataset.e2eScrollTarget === 'slot'`,
+        'mobile slot scroll guidance',
+      )
+      emptyTimeSlotsState.scrollTarget = await evaluate(
+        client,
+        `document.documentElement.dataset.e2eScrollTarget ?? ''`,
       )
       await clickDateChip(client, e2eVisitDates.primaryLabel)
       await waitFor(client, enabledSelector('.mobile-action-bar button'), 'selectable product and time slot after empty date')
@@ -454,7 +717,6 @@ async function run() {
         })()`,
       )
     }
-    await clickSelector(client, '.order-mobile-card')
     await waitFor(
       client,
       `(() => {
@@ -464,6 +726,13 @@ async function run() {
       })()`,
       'mobile detail drawer settled',
     )
+    if (mock) {
+      await waitFor(
+        client,
+        `document.querySelector('.mobile-order-detail-drawer')?.textContent.includes('ORD-E2E-001')`,
+        'newly created order detail drawer',
+      )
+    }
     await waitFor(client, enabledSelector('.mobile-order-detail-drawer .ant-btn-primary'), 'mobile drawer pay button')
     const mobileDetailActionState = await evaluate(
       client,
@@ -511,7 +780,7 @@ async function run() {
         const ticketRegion = detailDrawer?.querySelector('.ticket-code-list')
         return {
           clientWidth: document.documentElement.clientWidth,
-          hidesStateActions: !actionBar || !isVisible(actionBar),
+          hasRefundAction: Boolean(actionBar && isVisible(actionBar) && actionBar.textContent.includes('申请退款')),
           hasMockOrder: document.body.textContent.includes('ORD-E2E-001'),
           hasMockTicket1: document.body.textContent.includes('TICKET-E2E-001-LONG-CODE-20260701-ABCDEFGHIJK'),
           hasMockTicket2: document.body.textContent.includes('TICKET-E2E-002-LONG-CODE-20260701-ABCDEFGHIJK'),
@@ -526,6 +795,26 @@ async function run() {
         }
       })()`,
     )
+    if (mock) {
+      await clickByText(client, '申请退款')
+      await waitFor(client, includesText('确认申请整单退款？'), 'visitor refund confirmation modal')
+      await fillPlaceholder(client, '退款原因（选填）', '行程变更')
+      Object.assign(paidPageState, await evaluate(
+        client,
+        `(() => {
+          const modal = [...document.querySelectorAll('.ant-modal')]
+            .find((element) => element.textContent.includes('确认申请整单退款？'))
+          const rect = modal?.getBoundingClientRect()
+          return {
+            hasRefundDeadline: Boolean(modal?.textContent.includes('退款截止')),
+            hasRefundReason: Boolean(modal?.querySelector('textarea')?.value === '行程变更'),
+            refundModalFitsViewport: Boolean(rect && rect.left >= 0 && rect.right <= window.innerWidth),
+          }
+        })()`,
+      ))
+      await clickByText(client, '暂不退款')
+      await waitFor(client, `!document.body.textContent.includes('确认申请整单退款？')`, 'visitor refund modal closed')
+    }
     if (mock && orderCardToneState) {
       Object.assign(orderCardToneState, await evaluate(
         client,
@@ -598,6 +887,7 @@ async function run() {
     if (mock) {
       await navigateApp(client, appUrl)
       await waitFor(client, 'document.readyState === "complete"', 'booking page reload')
+      await fillBookingPassengers(client)
       await waitFor(client, enabledSelector('.mobile-action-bar button'), 'second order action')
       await clickSelector(client, '.mobile-action-bar button')
       await waitFor(client, includesText('ORD-E2E-002'), 'second created order')
@@ -689,6 +979,7 @@ async function run() {
     if (mock) {
       await navigateApp(client, appUrl)
       await waitFor(client, 'document.readyState === "complete"', 'booking page before quota order')
+      await fillBookingPassengers(client)
       await waitFor(client, enabledSelector('.mobile-action-bar button'), 'third order action')
       await clickSelector(client, '.mobile-action-bar button')
       await waitFor(client, includesText('ORD-E2E-003'), 'third created order')
@@ -736,6 +1027,7 @@ async function run() {
     if (mock) {
       await navigateApp(client, appUrl)
       await waitFor(client, 'document.readyState === "complete"', 'booking page before cancel failure order')
+      await fillBookingPassengers(client)
       await waitFor(client, enabledSelector('.mobile-action-bar button'), 'fourth order action')
       await clickSelector(client, '.mobile-action-bar button')
       await waitFor(client, includesText('ORD-E2E-004'), 'fourth created order')
@@ -876,6 +1168,58 @@ async function run() {
         })()`,
         'historical paid order drawer closed',
       )
+      await clickSegmentedOption(client, '全部')
+      const openedRefundOrder = await evaluate(
+        client,
+        `(() => {
+          const card = [...document.querySelectorAll('.order-mobile-card')]
+            .find((element) => element.textContent.includes('ORD-E2E-001'))
+          if (!card) return false
+          card.click()
+          return true
+        })()`,
+      )
+      assert(openedRefundOrder, 'refundable paid order should be selectable from all orders')
+      await waitFor(client, includesText('申请退款'), 'visitor refund action from all orders')
+      await clickByText(client, '申请退款')
+      await waitFor(client, includesText('确认申请整单退款？'), 'historical paid order refund confirmation')
+      await fillPlaceholder(client, '退款原因（选填）', '行程变更')
+      await clickByText(client, '确认退款')
+      await waitFor(
+        client,
+        `(() => {
+          const drawer = document.querySelector('.mobile-order-detail-drawer')
+          return Boolean(drawer?.textContent.includes('已退款') && drawer.textContent.includes('票码已失效'))
+        })()`,
+        'visitor refund success state',
+      )
+      await clickSelector(client, '.mobile-order-detail-drawer .ant-drawer-close')
+      await waitFor(
+        client,
+        `(() => {
+          ${visibleElementScript}
+          const drawer = document.querySelector('.mobile-order-detail-drawer')
+          return !drawer || !isVisible(drawer)
+        })()`,
+        'refunded order drawer closed',
+      )
+      await clickSegmentedOption(client, '已退款')
+      await waitFor(
+        client,
+        `document.querySelector('.orders-mobile-list')?.textContent.includes('ORD-E2E-001')`,
+        'refunded status filter',
+      )
+      const refundedCardVisualState = await evaluate(
+        client,
+        `(() => {
+          const card = document.querySelector('.order-mobile-card[data-order-status="REFUNDED"]')
+          const art = card?.querySelector('.order-mobile-card-art')
+          return {
+            hasRefundedTone: card?.classList.contains('is-refunded') ?? false,
+            keepsTicketImage: getComputedStyle(art).backgroundImage.includes('admin-login-landscape.png'),
+          }
+        })()`,
+      )
       await clickSegmentedOption(client, '已取消')
       await waitFor(
         client,
@@ -908,6 +1252,7 @@ async function run() {
       )
       orderStatusFilterState.paidFilterShowsDetailLoading = paidFilterShowsDetailLoading
       orderStatusFilterState.paidFilterShowsResult = paidFilterShowsResult
+      orderStatusFilterState.refundedCardVisualState = refundedCardVisualState
 
       mock.state.orders.push(createOrder('ORD-E2E-404', 'CREATED'))
       mock.state.detailFailureOrderNos.add('ORD-E2E-404')
@@ -969,6 +1314,7 @@ async function run() {
     }
 
     assertVisitorE2eState({
+      bookingBreakpointStates,
       bookingStepState,
       cancelNotAllowedState,
       catalogFallbackState,
@@ -982,8 +1328,10 @@ async function run() {
       emptyTimeSlotsState,
       loggedOutOrdersState,
       mobileBookingVisualState,
+      mobileAuthModalState,
       mobileDateStripState,
       mobileDetailActionState,
+      mobileBookingNextState,
       mobileTicketCardState,
       mock,
       notPayablePaymentState,
@@ -997,6 +1345,10 @@ async function run() {
       timeSlotFallbackState,
       visitorShellState,
     })
+    if (process.env.E2E_VISITOR_ONLY === '1') {
+      console.log('Visitor E2E smoke passed')
+      return
+    }
     await client.send('Emulation.setDeviceMetricsOverride', {
       deviceScaleFactor: 1,
       height: 900,
@@ -1031,8 +1383,8 @@ async function run() {
         hidesReportTotals: !document.body.textContent.includes('¥ 30220.00'),
       }))()`,
     )
-    await fillPlaceholder(client, '请输入管理员账号', 'admin')
-    await fillPlaceholder(client, '请输入密码', 'demo-secret')
+    await fillPlaceholderIn(client, '.admin-login-gate-card', '请输入管理员账号', 'admin')
+    await fillPlaceholderIn(client, '.admin-login-gate-card', '请输入密码', 'demo-secret')
     await clickSelector(client, '.admin-login-gate-card button[type="submit"]')
     await waitFor(client, includesText('演示管理员'), 'mock admin session')
     adminShellState = await evaluate(
@@ -2546,8 +2898,10 @@ async function run() {
       emptyTimeSlotsState,
       loggedOutOrdersState,
       mobileBookingVisualState,
+      mobileAuthModalState,
       mobileDateStripState,
       mobileDetailActionState,
+      mobileBookingNextState,
       mobileTicketCardState,
       mock,
       orderDetailErrorState,

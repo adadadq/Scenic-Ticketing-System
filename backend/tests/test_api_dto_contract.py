@@ -401,6 +401,7 @@ def test_order_me_dto_matches_frontend_order_contract_and_omits_pending_ticket_c
         "totalAmount",
         "payableAmount",
         "orderTime",
+        "canSelfRefund",
         "items",
     }
     assert set(payload["items"][0]) == {
@@ -440,6 +441,7 @@ def test_frontend_order_types_match_backend_dto_fields_and_filters():
         total_amount=Decimal("256.00"),
         payable_amount=Decimal("256.00"),
         order_time=datetime.fromisoformat("2026-07-01T09:00:00+00:00"),
+        refund_deadline=datetime.fromisoformat("2026-06-30T18:00:00+08:00"),
         items=[
             OrderItemMeDTO(
                 item_no="I001",

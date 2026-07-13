@@ -6,6 +6,7 @@ export const orderStatusMeta: Record<string, { label: string; tone: OrderStatusT
   CANCELLED: { label: '已取消', tone: 'default' },
   COMPLETED: { label: '已完成', tone: 'success' },
   REFUNDING: { label: '退款中', tone: 'warning' },
+  REFUNDED: { label: '已退款', tone: 'default' },
 }
 
 export function parseOrderAmount(amount: string): number {

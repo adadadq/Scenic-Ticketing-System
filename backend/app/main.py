@@ -79,6 +79,7 @@ CSRF_PROTECTED_POST_PATHS = (
     "/api/me/passenger-templates",
     "/api/orders/{order_no}/pay",
     "/api/orders/{order_no}/cancel",
+    "/api/orders/{order_no}/refund",
 )
 
 CSRF_PROTECTED_DELETE_PATHS = (
