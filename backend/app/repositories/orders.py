@@ -2671,8 +2671,8 @@ class PostgresOrderRepository:
                         payment_status,
                         paid_amount
                     FROM ticket_order
-                    WHERE (%s IS NULL OR order_time::date >= %s)
-                      AND (%s IS NULL OR order_time::date <= %s)
+                    WHERE (%s::date IS NULL OR order_time::date >= %s)
+                      AND (%s::date IS NULL OR order_time::date <= %s)
                 ),
                 order_stats AS (
                     SELECT
@@ -2741,8 +2741,8 @@ class PostgresOrderRepository:
                         id,
                         paid_amount
                     FROM ticket_order
-                    WHERE (%s IS NULL OR order_time::date >= %s)
-                      AND (%s IS NULL OR order_time::date <= %s)
+                    WHERE (%s::date IS NULL OR order_time::date >= %s)
+                      AND (%s::date IS NULL OR order_time::date <= %s)
                 ),
                 order_totals AS (
                     SELECT
@@ -2822,8 +2822,8 @@ class PostgresOrderRepository:
                     COUNT(toi.id)::INTEGER AS item_count
                 FROM ticket_order o
                 LEFT JOIN ticket_order_item toi ON toi.order_id = o.id
-                WHERE (%s IS NULL OR o.order_time::date >= %s)
-                  AND (%s IS NULL OR o.order_time::date <= %s)
+                WHERE (%s::date IS NULL OR o.order_time::date >= %s)
+                  AND (%s::date IS NULL OR o.order_time::date <= %s)
                 GROUP BY
                     o.id,
                     o.order_no,
@@ -2874,8 +2874,8 @@ class PostgresOrderRepository:
                 JOIN ticket_order_item toi ON toi.order_id = o.id
                 JOIN route_product rp ON rp.id = toi.product_id
                 JOIN ticket_type tt ON tt.id = toi.ticket_type_id
-                WHERE (%s IS NULL OR o.order_time::date >= %s)
-                  AND (%s IS NULL OR o.order_time::date <= %s)
+                WHERE (%s::date IS NULL OR o.order_time::date >= %s)
+                  AND (%s::date IS NULL OR o.order_time::date <= %s)
                 GROUP BY
                     toi.product_id,
                     toi.ticket_type_id,
@@ -2908,8 +2908,8 @@ class PostgresOrderRepository:
                         payment_status,
                         paid_amount
                     FROM ticket_order
-                    WHERE (%s IS NULL OR order_time::date >= %s)
-                      AND (%s IS NULL OR order_time::date <= %s)
+                    WHERE (%s::date IS NULL OR order_time::date >= %s)
+                      AND (%s::date IS NULL OR order_time::date <= %s)
                 ),
                 order_stats AS (
                     SELECT
@@ -2982,8 +2982,8 @@ class PostgresOrderRepository:
                         payment_status,
                         paid_amount
                     FROM ticket_order
-                    WHERE (%s IS NULL OR order_time::date >= %s)
-                      AND (%s IS NULL OR order_time::date <= %s)
+                    WHERE (%s::date IS NULL OR order_time::date >= %s)
+                      AND (%s::date IS NULL OR order_time::date <= %s)
                 ),
                 order_stats AS (
                     SELECT
@@ -3056,8 +3056,8 @@ class PostgresOrderRepository:
                         payment_status,
                         paid_amount
                     FROM ticket_order
-                    WHERE (%s IS NULL OR order_time::date >= %s)
-                      AND (%s IS NULL OR order_time::date <= %s)
+                    WHERE (%s::date IS NULL OR order_time::date >= %s)
+                      AND (%s::date IS NULL OR order_time::date <= %s)
                 ),
                 order_stats AS (
                     SELECT

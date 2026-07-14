@@ -1224,3 +1224,44 @@ def test_postgres_admin_monthly_trend_uses_parameterized_date_filters_and_separa
     assert "2026-01-01" not in sql
     assert "2026-12-31" not in sql
     assert params == (date(2026, 1, 1), date(2026, 1, 1), date(2026, 12, 31), date(2026, 12, 31))
+
+
+def test_postgres_admin_report_queries_type_nullable_date_filters(monkeypatch):
+    calls: list[tuple[str, tuple[object, ...]]] = []
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, sql: str, params: tuple[object, ...]):
+            calls.append((sql, params))
+            return self
+
+        def fetchone(self):
+            return None
+
+        def fetchall(self):
+            return []
+
+    monkeypatch.setattr(order_repository_module, "connect_db", lambda: FakeConnection())
+
+    repository = PostgresOrderRepository()
+    filters = AdminReportFilter(date_from=None, date_to=None)
+    for method_name in (
+        "get_admin_report_summary",
+        "get_admin_payment_reconciliation",
+        "list_admin_order_export_rows",
+        "list_admin_product_breakdown",
+        "list_admin_daily_trend",
+        "list_admin_hourly_trend",
+        "list_admin_monthly_trend",
+    ):
+        getattr(repository, method_name)(filters)
+
+    assert len(calls) == 7
+    for sql, params in calls:
+        assert sql.count("%s::date IS NULL") == 2
+        assert params[:4] == (None, None, None, None)

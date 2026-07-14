@@ -134,6 +134,7 @@ Linux 部署环境可参考 `deploy/systemd/scenic-ticket-admin-export-worker.se
 
 ## 使用与部署文档
 
+- Windows 从 GitHub 拉取并启动：[docs/windows-setup.md](docs/windows-setup.md)
 - 游客端和管理端操作：[docs/usage.md](docs/usage.md)
 - 本地前端说明：[frontend/README.md](frontend/README.md)
 - 数据库初始化与迁移：[database/README.md](database/README.md)
